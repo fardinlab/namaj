@@ -117,7 +117,7 @@ export default function Campaign() {
             <div className="space-y-2">
               <h4 className="font-medium">পাঁচ ওয়াক্ত নামাজ:</h4>
               <div className="flex flex-wrap gap-2">
-                {['ফজর', 'যোহর', 'আসর', 'মাগরিব', 'ঈশা'].map(prayer => (
+                {['ফজর', 'যোহর', 'আসর', 'মাগরিব', 'এশা'].map(prayer => (
                   <span key={prayer} className="bg-muted px-3 py-1 rounded-full text-sm">
                     {prayer}
                   </span>
