@@ -3,19 +3,11 @@ import { format } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertTriangle, Download, Trash2, Calendar as CalendarIcon, Settings as SettingsIcon } from 'lucide-react';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useCampaignData } from '@/hooks/useCampaignData';
 import { formatBanglaDate, toBanglaNumber, getTotalDays } from '@/lib/bangla-utils';
@@ -29,6 +21,9 @@ export default function Settings() {
   const [endDate, setEndDate] = useState<Date>(new Date(config.endDate));
   const [startOpen, setStartOpen] = useState(false);
   const [endOpen, setEndOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteCode, setDeleteCode] = useState('');
+  const [deleteError, setDeleteError] = useState(false);
 
   const totalDays = getTotalDays(
     startDate.toISOString().split('T')[0], 
@@ -85,10 +80,20 @@ export default function Settings() {
   };
 
   const handleClearData = () => {
-    localStorage.removeItem('campaign-members');
-    localStorage.removeItem('campaign-attendance');
-    localStorage.removeItem('campaign-config');
-    window.location.reload();
+    if (deleteCode === 'FARDIN') {
+      localStorage.removeItem('campaign-members');
+      localStorage.removeItem('campaign-attendance');
+      localStorage.removeItem('campaign-config');
+      window.location.reload();
+    } else {
+      setDeleteError(true);
+    }
+  };
+
+  const openDeleteDialog = () => {
+    setDeleteCode('');
+    setDeleteError(false);
+    setDeleteDialogOpen(true);
   };
 
   return (
@@ -219,32 +224,10 @@ export default function Settings() {
             সমস্ত ডাটা মুছে ফেলুন। এই কাজটি পূর্বাবস্থায় ফেরানো যাবে না।
           </p>
           
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="destructive" className="gap-2">
-                <Trash2 className="h-4 w-4" />
-                সমস্ত ডাটা মুছে ফেলুন
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>আপনি কি নিশ্চিত?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  এই কাজটি সমস্ত সদস্য এবং তাদের উপস্থিতি তথ্য স্থায়ীভাবে মুছে ফেলবে।
-                  এই কাজটি পূর্বাবস্থায় ফেরানো যাবে না।
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>বাতিল</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={handleClearData}
-                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                >
-                  হ্যাঁ, মুছে ফেলুন
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+          <Button variant="destructive" className="gap-2" onClick={openDeleteDialog}>
+            <Trash2 className="h-4 w-4" />
+            সমস্ত ডাটা মুছে ফেলুন
+          </Button>
         </CardContent>
       </Card>
 
@@ -258,6 +241,54 @@ export default function Settings() {
           </p>
         </CardContent>
       </Card>
+
+      {/* Delete All Data Dialog with Secret Code */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>সমস্ত ডাটা মুছে ফেলুন</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            <p className="text-sm text-muted-foreground">
+              এই কাজটি সমস্ত সদস্য এবং তাদের উপস্থিতি তথ্য স্থায়ীভাবে মুছে ফেলবে।
+              মুছে ফেলতে গোপন কোড লিখুন।
+            </p>
+            <div className="space-y-2">
+              <Label htmlFor="delete-all-code">গোপন কোড</Label>
+              <Input
+                id="delete-all-code"
+                type="password"
+                placeholder="গোপন কোড লিখুন"
+                value={deleteCode}
+                onChange={(e) => {
+                  setDeleteCode(e.target.value);
+                  setDeleteError(false);
+                }}
+                className={deleteError ? 'border-destructive' : ''}
+              />
+              {deleteError && (
+                <p className="text-sm text-destructive">ভুল কোড! সঠিক কোড দিন।</p>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline"
+                onClick={() => setDeleteDialogOpen(false)} 
+                className="flex-1"
+              >
+                বাতিল
+              </Button>
+              <Button 
+                variant="destructive"
+                onClick={handleClearData} 
+                className="flex-1"
+              >
+                মুছে ফেলুন
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
