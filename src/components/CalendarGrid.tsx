@@ -1,5 +1,5 @@
 import { cn } from '@/lib/utils';
-import { generateDateRange, toBanglaNumber, formatShortBanglaDate } from '@/lib/bangla-utils';
+import { generateDateRange, toBanglaNumber, formatShortBanglaDate, getTotalDays } from '@/lib/bangla-utils';
 import { AttendanceRecord, CampaignConfig } from '@/lib/types';
 
 interface CalendarGridProps {
@@ -10,6 +10,7 @@ interface CalendarGridProps {
 
 export function CalendarGrid({ attendance, memberId, config }: CalendarGridProps) {
   const dates = generateDateRange(config.startDate, config.endDate);
+  const totalDays = getTotalDays(config.startDate, config.endDate);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
@@ -29,7 +30,7 @@ export function CalendarGrid({ attendance, memberId, config }: CalendarGridProps
 
   return (
     <div className="bg-card border border-border rounded-xl p-4">
-      <h3 className="text-lg font-semibold mb-4">৫০ দিনের ক্যালেন্ডার</h3>
+      <h3 className="text-lg font-semibold mb-4">{toBanglaNumber(totalDays)} দিনের ক্যালেন্ডার</h3>
       
       <div className="grid grid-cols-7 gap-1 sm:gap-2">
         {/* Weekday headers */}
