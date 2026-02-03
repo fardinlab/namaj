@@ -165,12 +165,6 @@ export function useCampaignData() {
     setConfig(prev => ({ ...prev, ...newConfig }));
   };
 
-  // Delete all attendance for February 3, 2026
-  const feb3Data = attendance.filter(a => a.date === '2026-02-03');
-  if (feb3Data.length > 0) {
-    setAttendance(prev => prev.filter(a => a.date !== '2026-02-03'));
-  }
-
   return {
     members,
     attendance,
