@@ -78,7 +78,7 @@ export function useCampaignData() {
     
     let totalPoints = 0;
     let activeDays = 0; // Days with at least 1 prayer
-    let perfectDays = 0; // Days with all 5 prayers
+    let qualifyingDays = 0; // Days with Fajr AND Isha prayers
     let currentStreak = 0;
     let maxStreak = 0;
     
@@ -87,7 +87,7 @@ export function useCampaignData() {
       new Date(a.date).getTime() - new Date(b.date).getTime()
     );
     
-    const perfectDayDates: string[] = [];
+    const qualifyingDayDates: string[] = [];
     
     sortedAttendance.forEach(record => {
       const prayers = Object.values(record.prayers);
@@ -99,21 +99,21 @@ export function useCampaignData() {
         activeDays++;
       }
       
-      // Count perfect days (all 5 prayers)
-      if (dayPoints === 5) {
-        perfectDays++;
-        perfectDayDates.push(record.date);
+      // Count qualifying days (Fajr AND Isha prayers)
+      if (record.prayers.fajr && record.prayers.isha) {
+        qualifyingDays++;
+        qualifyingDayDates.push(record.date);
       }
     });
     
-    // Calculate streak for perfect days
+    // Calculate streak for qualifying days (Fajr + Isha)
     let tempStreak = 0;
-    for (let i = 0; i < perfectDayDates.length; i++) {
+    for (let i = 0; i < qualifyingDayDates.length; i++) {
       if (i === 0) {
         tempStreak = 1;
       } else {
-        const prevDate = new Date(perfectDayDates[i - 1]);
-        const currDate = new Date(perfectDayDates[i]);
+        const prevDate = new Date(qualifyingDayDates[i - 1]);
+        const currDate = new Date(qualifyingDayDates[i]);
         const diffDays = (currDate.getTime() - prevDate.getTime()) / (1000 * 60 * 60 * 24);
         
         if (diffDays === 1) {
@@ -132,12 +132,12 @@ export function useCampaignData() {
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
     
-    if (perfectDayDates.length > 0) {
-      const lastPerfectDate = new Date(perfectDayDates[perfectDayDates.length - 1]);
-      lastPerfectDate.setHours(0, 0, 0, 0);
+    if (qualifyingDayDates.length > 0) {
+      const lastQualifyingDate = new Date(qualifyingDayDates[qualifyingDayDates.length - 1]);
+      lastQualifyingDate.setHours(0, 0, 0, 0);
       
-      if (lastPerfectDate.getTime() === today.getTime() || 
-          lastPerfectDate.getTime() === yesterday.getTime()) {
+      if (lastQualifyingDate.getTime() === today.getTime() || 
+          lastQualifyingDate.getTime() === yesterday.getTime()) {
         currentStreak = tempStreak;
       }
     }
@@ -145,7 +145,7 @@ export function useCampaignData() {
     return {
       totalPoints,
       activeDays, // Days with at least 1 prayer
-      perfectDays, // Days with all 5 prayers
+      qualifyingDays, // Days with Fajr AND Isha
       currentStreak,
       maxStreak,
       isWinner: maxStreak >= config.streakTarget,
