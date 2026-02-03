@@ -9,7 +9,8 @@ import {
   Menu,
   X,
   Moon,
-  Code
+  Code,
+  CalendarDays
 } from 'lucide-react';
 import { AppNavLink } from './AppNavLink';
 import { Button } from '@/components/ui/button';
@@ -18,6 +19,7 @@ import { cn } from '@/lib/utils';
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'ড্যাশবোর্ড' },
   { to: '/members', icon: Users, label: 'সদস্য তালিকা' },
+  { to: '/prayer-history', icon: CalendarDays, label: 'নামাজ আদায়ের তারিখ ও তালিকা' },
   { to: '/leaderboard', icon: Trophy, label: 'লিডারবোর্ড' },
   { to: '/campaign', icon: Info, label: 'ক্যাম্পেইনের তথ্য' },
   { to: '/settings', icon: Settings, label: 'সেটিংস' },
