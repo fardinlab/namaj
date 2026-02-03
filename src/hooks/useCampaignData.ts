@@ -17,6 +17,12 @@ export function useCampaignData() {
     return newMember;
   };
 
+  const updateMemberPhoto = (memberId: string, photo: string | undefined) => {
+    setMembers(prev => prev.map(m => 
+      m.id === memberId ? { ...m, photo } : m
+    ));
+  };
+
   const removeMember = (memberId: string) => {
     setMembers(prev => prev.filter(m => m.id !== memberId));
     setAttendance(prev => prev.filter(a => a.memberId !== memberId));
@@ -140,6 +146,7 @@ export function useCampaignData() {
     members,
     attendance,
     addMember,
+    updateMemberPhoto,
     removeMember,
     getAttendanceForDate,
     togglePrayer,

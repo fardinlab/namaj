@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useCampaignData } from '@/hooks/useCampaignData';
 import { toBanglaNumber } from '@/lib/bangla-utils';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { MemberPhotoUpload } from '@/components/MemberPhotoUpload';
 import {
   Dialog,
   DialogContent,
@@ -26,7 +27,7 @@ import {
 import { Plus, Search, Star, Calendar, Flame, Trash2 } from 'lucide-react';
 
 export default function Members() {
-  const { members, addMember, removeMember, getMemberStats } = useCampaignData();
+  const { members, addMember, removeMember, updateMemberPhoto, getMemberStats } = useCampaignData();
   const [searchQuery, setSearchQuery] = useState('');
   const [newMemberName, setNewMemberName] = useState('');
   const [newMemberPhone, setNewMemberPhone] = useState('');
@@ -120,12 +121,20 @@ export default function Members() {
             return (
               <Card key={member.id} className="hover:shadow-md transition-shadow">
                 <CardContent className="p-4">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1">
+                  <div className="flex items-start gap-4">
+                    {/* Photo */}
+                    <MemberPhotoUpload
+                      photo={member.photo}
+                      name={member.name}
+                      onPhotoChange={(photo) => updateMemberPhoto(member.id, photo)}
+                      size="md"
+                    />
+
+                    <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-2">
-                        <h3 className="text-lg font-semibold">{member.name}</h3>
+                        <h3 className="text-lg font-semibold truncate">{member.name}</h3>
                         {stats.isWinner && (
-                          <span className="bg-primary/10 text-primary text-xs px-2 py-1 rounded-full">
+                          <span className="bg-primary/10 text-primary text-xs px-2 py-1 rounded-full flex-shrink-0">
                             🏆 বিজয়ী
                           </span>
                         )}
@@ -133,21 +142,21 @@ export default function Members() {
                       
                       <div className="grid grid-cols-3 gap-4 text-sm">
                         <div className="flex items-center gap-2">
-                          <Star className="h-4 w-4 text-primary" />
+                          <Star className="h-4 w-4 text-primary flex-shrink-0" />
                           <span>
                             <span className="font-medium">{toBanglaNumber(stats.totalPoints)}</span>
                             <span className="text-muted-foreground"> পয়েন্ট</span>
                           </span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Calendar className="h-4 w-4 text-green-600" />
+                          <Calendar className="h-4 w-4 text-green-600 flex-shrink-0" />
                           <span>
                             <span className="font-medium">{toBanglaNumber(stats.perfectDays)}</span>
                             <span className="text-muted-foreground"> দিন</span>
                           </span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Flame className="h-4 w-4 text-amber-600" />
+                          <Flame className="h-4 w-4 text-amber-600 flex-shrink-0" />
                           <span>
                             <span className="font-medium">{toBanglaNumber(stats.currentStreak)}</span>
                             <span className="text-muted-foreground"> ধারা</span>
@@ -158,7 +167,7 @@ export default function Members() {
 
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive flex-shrink-0">
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </AlertDialogTrigger>

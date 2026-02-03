@@ -2,6 +2,7 @@ export interface Member {
   id: string;
   name: string;
   phone?: string;
+  photo?: string; // base64 encoded image (max 100KB)
   createdAt: string;
 }
 
