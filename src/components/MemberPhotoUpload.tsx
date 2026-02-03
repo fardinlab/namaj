@@ -178,14 +178,14 @@ export function MemberPhotoUpload({ photo, name, onPhotoChange, size = 'md' }: M
       </div>
 
       {/* Remove button */}
-      {photo && (
+      {photo && !isCompressing && (
         <Button
           variant="destructive"
           size="icon"
-          className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0"
+          className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0 z-10 shadow-md"
           onClick={handleRemovePhoto}
         >
-          <X className="h-3 w-3" />
+          <X className="h-3.5 w-3.5" />
         </Button>
       )}
     </div>
