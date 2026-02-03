@@ -73,7 +73,8 @@ export function useCampaignData() {
     const memberAttendance = attendance.filter(a => a.memberId === memberId);
     
     let totalPoints = 0;
-    let perfectDays = 0;
+    let activeDays = 0; // Days with at least 1 prayer
+    let perfectDays = 0; // Days with all 5 prayers
     let currentStreak = 0;
     let maxStreak = 0;
     
@@ -89,6 +90,12 @@ export function useCampaignData() {
       const dayPoints = prayers.filter(Boolean).length;
       totalPoints += dayPoints;
       
+      // Count days with at least 1 prayer
+      if (dayPoints >= 1) {
+        activeDays++;
+      }
+      
+      // Count perfect days (all 5 prayers)
       if (dayPoints === 5) {
         perfectDays++;
         perfectDayDates.push(record.date);
@@ -133,7 +140,8 @@ export function useCampaignData() {
     
     return {
       totalPoints,
-      perfectDays,
+      activeDays, // Days with at least 1 prayer
+      perfectDays, // Days with all 5 prayers
       currentStreak,
       maxStreak,
       isWinner: maxStreak >= config.streakTarget,

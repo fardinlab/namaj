@@ -94,11 +94,11 @@ export default function Leaderboard() {
                     <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
                       <span className="flex items-center gap-1">
                         <Calendar className="h-3.5 w-3.5" />
-                        {toBanglaNumber(member.stats.perfectDays)} দিন
+                        {toBanglaNumber(member.stats.activeDays)} দিন
                       </span>
                       <span className="flex items-center gap-1">
                         <Flame className="h-3.5 w-3.5" />
-                        {toBanglaNumber(member.stats.maxStreak)} ধারা
+                        {toBanglaNumber(member.stats.currentStreak)} ধারা
                       </span>
                     </div>
                   </div>

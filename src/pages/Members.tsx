@@ -241,7 +241,7 @@ export default function Members() {
                         <div className="flex items-center gap-2">
                           <Calendar className="h-4 w-4 text-green-600 flex-shrink-0" />
                           <span>
-                            <span className="font-medium">{toBanglaNumber(stats.perfectDays)}</span>
+                            <span className="font-medium">{toBanglaNumber(stats.activeDays)}</span>
                             <span className="text-muted-foreground"> দিন</span>
                           </span>
                         </div>
