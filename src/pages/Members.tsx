@@ -40,6 +40,7 @@ export default function Members() {
   const [deleteError, setDeleteError] = useState(false);
 
   const todayStr = new Date().toISOString().split('T')[0];
+  const prayers: PrayerName[] = ['fajr', 'zuhr', 'asr', 'maghrib', 'isha'];
 
   const hasTodayData = (memberId: string) => {
     const record = attendance.find(a => a.memberId === memberId && a.date === todayStr);
@@ -163,7 +164,6 @@ export default function Members() {
             const stats = getMemberStats(member.id);
             const hasUpdatedToday = hasTodayData(member.id);
             const todayRecord = attendance.find(a => a.memberId === member.id && a.date === todayStr);
-            const prayers: PrayerName[] = ['fajr', 'zuhr', 'asr', 'maghrib', 'isha'];
               
               return (
                 <Card 
