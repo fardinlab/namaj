@@ -27,7 +27,7 @@ import {
 import { Plus, Search, Star, Calendar, Flame, Trash2, Phone } from 'lucide-react';
 
 export default function Members() {
-  const { members, addMember, removeMember, updateMemberPhoto, updateMemberPhone, getMemberStats } = useCampaignData();
+  const { members, attendance, addMember, removeMember, updateMemberPhoto, updateMemberPhone, getMemberStats } = useCampaignData();
   const [searchQuery, setSearchQuery] = useState('');
   const [newMemberName, setNewMemberName] = useState('');
   const [newMemberPhone, setNewMemberPhone] = useState('');
@@ -37,6 +37,14 @@ export default function Members() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState<string | null>(null);
   const [deleteCode, setDeleteCode] = useState('');
   const [deleteError, setDeleteError] = useState(false);
+
+  const todayStr = new Date().toISOString().split('T')[0];
+
+  const hasTodayData = (memberId: string) => {
+    const record = attendance.find(a => a.memberId === memberId && a.date === todayStr);
+    if (!record) return false;
+    return Object.values(record.prayers).some(Boolean);
+  };
 
   const filteredMembers = members.filter(member =>
     member.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -153,9 +161,14 @@ export default function Members() {
           {filteredMembers.map(member => {
             const stats = getMemberStats(member.id);
             
-            return (
-              <Card key={member.id} className="hover:shadow-md transition-shadow">
-                <CardContent className="p-4">
+              const hasUpdatedToday = hasTodayData(member.id);
+              
+              return (
+                <Card 
+                  key={member.id} 
+                  className={`hover:shadow-md transition-shadow ${!hasUpdatedToday ? 'border-2 border-amber-400 bg-amber-50/50 dark:bg-amber-950/20' : ''}`}
+                >
+                  <CardContent className="p-4">
                   <div className="flex items-start gap-4">
                     {/* Photo */}
                     <MemberPhotoUpload
