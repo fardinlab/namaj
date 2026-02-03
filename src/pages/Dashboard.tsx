@@ -167,11 +167,11 @@ export default function Dashboard() {
             </div>
           )}
 
-          {/* Progress to 41 days - Compact */}
-          {stats && !stats.isWinner && stats.maxStreak > 0 && (
+          {/* Progress to 41 days - Shows when Fajr & Isha are prayed */}
+          {stats && !stats.isWinner && stats.qualifyingDays > 0 && (
             <div className="bg-muted/30 rounded-xl p-3">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs text-muted-foreground">৪১ দিনের লক্ষ্য</span>
+                <span className="text-xs text-muted-foreground">৪১ দিনের লক্ষ্য (ফজর + এশা)</span>
                 <span className="text-xs font-medium">{toBanglaNumber(stats.maxStreak)}/৪১</span>
               </div>
               <div className="h-1.5 bg-muted rounded-full overflow-hidden">
