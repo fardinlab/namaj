@@ -35,6 +35,10 @@ export function useCampaignData() {
     setAttendance(prev => prev.filter(a => a.memberId !== memberId));
   };
 
+  const deleteAttendanceByDate = (date: string) => {
+    setAttendance(prev => prev.filter(a => a.date !== date));
+  };
+
   const getAttendanceForDate = (memberId: string, date: string): AttendanceRecord | undefined => {
     return attendance.find(a => a.memberId === memberId && a.date === date);
   };
@@ -161,6 +165,12 @@ export function useCampaignData() {
     setConfig(prev => ({ ...prev, ...newConfig }));
   };
 
+  // Delete all attendance for February 3, 2026
+  const feb3Data = attendance.filter(a => a.date === '2026-02-03');
+  if (feb3Data.length > 0) {
+    setAttendance(prev => prev.filter(a => a.date !== '2026-02-03'));
+  }
+
   return {
     members,
     attendance,
@@ -168,6 +178,7 @@ export function useCampaignData() {
     updateMemberPhoto,
     updateMemberPhone,
     removeMember,
+    deleteAttendanceByDate,
     getAttendanceForDate,
     togglePrayer,
     getMemberStats,
