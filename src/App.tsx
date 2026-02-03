@@ -9,6 +9,7 @@ import Members from "./pages/Members";
 import Leaderboard from "./pages/Leaderboard";
 import Campaign from "./pages/Campaign";
 import Settings from "./pages/Settings";
+import AboutDeveloper from "./pages/AboutDeveloper";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,6 +27,7 @@ const App = () => (
             <Route path="/leaderboard" element={<Leaderboard />} />
             <Route path="/campaign" element={<Campaign />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/about-developer" element={<AboutDeveloper />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
