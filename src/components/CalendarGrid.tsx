@@ -11,13 +11,15 @@ interface CalendarGridProps {
 export function CalendarGrid({ attendance, memberId, config }: CalendarGridProps) {
   const dates = generateDateRange(config.startDate, config.endDate);
   const totalDays = getTotalDays(config.startDate, config.endDate);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  
+  // Get today's date string in local timezone
+  const todayStr = new Date().toISOString().split('T')[0];
 
   const getDateStatus = (date: Date): 'perfect' | 'partial' | 'missed' | 'future' => {
     const dateStr = date.toISOString().split('T')[0];
     
-    if (date > today) return 'future';
+    // Compare date strings to avoid timezone issues
+    if (dateStr > todayStr) return 'future';
     
     const record = attendance.find(a => a.memberId === memberId && a.date === dateStr);
     if (!record) return 'missed';
@@ -26,6 +28,10 @@ export function CalendarGrid({ attendance, memberId, config }: CalendarGridProps
     if (prayerCount === 5) return 'perfect';
     if (prayerCount > 0) return 'partial';
     return 'missed';
+  };
+
+  const isToday = (date: Date): boolean => {
+    return date.toISOString().split('T')[0] === todayStr;
   };
 
   return (
@@ -48,7 +54,7 @@ export function CalendarGrid({ attendance, memberId, config }: CalendarGridProps
         {/* Date cells */}
         {dates.map((date, index) => {
           const status = getDateStatus(date);
-          const isToday = date.getTime() === today.getTime();
+          const isTodayDate = isToday(date);
           
           return (
             <div
@@ -60,7 +66,7 @@ export function CalendarGrid({ attendance, memberId, config }: CalendarGridProps
                 status === 'partial' && 'bg-amber-500/30 text-amber-700',
                 status === 'missed' && 'bg-destructive/20 text-destructive',
                 status === 'future' && 'bg-muted text-muted-foreground',
-                isToday && 'ring-2 ring-primary ring-offset-2'
+                isTodayDate && 'ring-2 ring-primary ring-offset-2'
               )}
             >
               {toBanglaNumber(date.getDate())}
