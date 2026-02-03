@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useCampaignData } from '@/hooks/useCampaignData';
 import { toBanglaNumber } from '@/lib/bangla-utils';
+import { PRAYER_NAMES, PrayerName } from '@/lib/types';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -160,8 +161,9 @@ export default function Members() {
         <div className="grid gap-4">
           {filteredMembers.map(member => {
             const stats = getMemberStats(member.id);
-            
-              const hasUpdatedToday = hasTodayData(member.id);
+            const hasUpdatedToday = hasTodayData(member.id);
+            const todayRecord = attendance.find(a => a.memberId === member.id && a.date === todayStr);
+            const prayers: PrayerName[] = ['fajr', 'zuhr', 'asr', 'maghrib', 'isha'];
               
               return (
                 <Card 
@@ -173,7 +175,27 @@ export default function Members() {
                   }`}
                 >
                   <CardContent className="p-4">
-                  <div className="flex items-start gap-4">
+                    {/* Today's Prayer Status */}
+                    <div className="flex gap-1.5 mb-3">
+                      {prayers.map(prayer => {
+                        const isCompleted = todayRecord?.prayers[prayer] ?? false;
+                        return (
+                          <div
+                            key={prayer}
+                            className={`flex-1 text-center py-1 px-1 rounded text-xs font-medium ${
+                              isCompleted 
+                                ? 'bg-green-500 text-white' 
+                                : 'bg-muted text-muted-foreground'
+                            }`}
+                            title={isCompleted ? `${PRAYER_NAMES[prayer]} ✓` : `${PRAYER_NAMES[prayer]} - বাকি`}
+                          >
+                            {PRAYER_NAMES[prayer]}
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    <div className="flex items-start gap-4">
                     {/* Photo */}
                     <MemberPhotoUpload
                       photo={member.photo}
