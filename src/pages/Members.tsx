@@ -166,7 +166,11 @@ export default function Members() {
               return (
                 <Card 
                   key={member.id} 
-                  className={`hover:shadow-md transition-shadow ${!hasUpdatedToday ? 'border-2 border-amber-400 bg-amber-50/50 dark:bg-amber-950/20' : ''}`}
+                  className={`hover:shadow-md transition-shadow ${
+                    hasUpdatedToday 
+                      ? 'border-2 border-green-500 bg-green-50/50 dark:bg-green-950/20' 
+                      : 'border-2 border-amber-400 bg-amber-50/50 dark:bg-amber-950/20'
+                  }`}
                 >
                   <CardContent className="p-4">
                   <div className="flex items-start gap-4">
