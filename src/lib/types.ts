@@ -30,7 +30,7 @@ export const PRAYER_NAMES: Record<PrayerName, string> = {
   zuhr: 'যোহর',
   asr: 'আসর',
   maghrib: 'মাগরিব',
-  isha: 'ঈশা',
+  isha: 'এশা',
 };
 
 export const CAMPAIGN_CONFIG: CampaignConfig = {
