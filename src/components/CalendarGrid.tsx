@@ -1,14 +1,15 @@
 import { cn } from '@/lib/utils';
 import { generateDateRange, toBanglaNumber, formatShortBanglaDate } from '@/lib/bangla-utils';
-import { AttendanceRecord, CAMPAIGN_CONFIG } from '@/lib/types';
+import { AttendanceRecord, CampaignConfig } from '@/lib/types';
 
 interface CalendarGridProps {
   attendance: AttendanceRecord[];
   memberId: string;
+  config: CampaignConfig;
 }
 
-export function CalendarGrid({ attendance, memberId }: CalendarGridProps) {
-  const dates = generateDateRange(CAMPAIGN_CONFIG.startDate, CAMPAIGN_CONFIG.endDate);
+export function CalendarGrid({ attendance, memberId, config }: CalendarGridProps) {
+  const dates = generateDateRange(config.startDate, config.endDate);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
@@ -39,7 +40,7 @@ export function CalendarGrid({ attendance, memberId }: CalendarGridProps) {
         ))}
         
         {/* Empty cells for alignment */}
-        {Array.from({ length: (new Date(CAMPAIGN_CONFIG.startDate).getDay() + 1) % 7 }).map((_, i) => (
+        {Array.from({ length: (new Date(config.startDate).getDay() + 1) % 7 }).map((_, i) => (
           <div key={`empty-${i}`} />
         ))}
         

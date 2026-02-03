@@ -1,10 +1,11 @@
 import { useMemo } from 'react';
 import { useLocalStorage } from './useLocalStorage';
-import { Member, AttendanceRecord, CAMPAIGN_CONFIG, PrayerName } from '@/lib/types';
+import { Member, AttendanceRecord, CampaignConfig, DEFAULT_CAMPAIGN_CONFIG, PrayerName } from '@/lib/types';
 
 export function useCampaignData() {
   const [members, setMembers] = useLocalStorage<Member[]>('campaign-members', []);
   const [attendance, setAttendance] = useLocalStorage<AttendanceRecord[]>('campaign-attendance', []);
+  const [config, setConfig] = useLocalStorage<CampaignConfig>('campaign-config', DEFAULT_CAMPAIGN_CONFIG);
 
   const addMember = (name: string, phone?: string) => {
     const newMember: Member = {
@@ -129,7 +130,7 @@ export function useCampaignData() {
       perfectDays,
       currentStreak,
       maxStreak,
-      isWinner: maxStreak >= CAMPAIGN_CONFIG.streakTarget,
+      isWinner: maxStreak >= config.streakTarget,
     };
   };
 
@@ -142,6 +143,10 @@ export function useCampaignData() {
       .sort((a, b) => b.stats.totalPoints - a.stats.totalPoints);
   }, [members, attendance]);
 
+  const updateConfig = (newConfig: Partial<CampaignConfig>) => {
+    setConfig(prev => ({ ...prev, ...newConfig }));
+  };
+
   return {
     members,
     attendance,
@@ -152,6 +157,7 @@ export function useCampaignData() {
     togglePrayer,
     getMemberStats,
     getLeaderboard,
-    config: CAMPAIGN_CONFIG,
+    config,
+    updateConfig,
   };
 }
