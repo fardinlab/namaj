@@ -46,15 +46,10 @@ export function AppLayout() {
         {/* Header */}
         <div className="p-6 border-b border-sidebar-border">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-bold text-sidebar-foreground flex items-center gap-2">
-                <Moon className="h-6 w-6 text-sidebar-primary" />
-                <span>নামাজ ক্যাম্পেইন</span>
-              </h1>
-              <p className="text-sm text-sidebar-foreground/70 mt-1">
-                ৫০ দিনের জামাতে নামাজ উদ্যোগ
-              </p>
-            </div>
+            <h1 className="text-xl font-bold text-sidebar-foreground flex items-center gap-2">
+              <Moon className="h-6 w-6 text-sidebar-primary" />
+              <span>নামাজ ক্যাম্পেইন</span>
+            </h1>
             <Button
               variant="ghost"
               size="icon"
