@@ -34,6 +34,9 @@ export default function Members() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [phoneDialogOpen, setPhoneDialogOpen] = useState<string | null>(null);
   const [editPhone, setEditPhone] = useState('');
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState<string | null>(null);
+  const [deleteCode, setDeleteCode] = useState('');
+  const [deleteError, setDeleteError] = useState(false);
 
   const filteredMembers = members.filter(member =>
     member.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -59,6 +62,23 @@ export default function Members() {
   const openPhoneDialog = (memberId: string, currentPhone?: string) => {
     setEditPhone(currentPhone || '');
     setPhoneDialogOpen(memberId);
+  };
+
+  const handleDeleteMember = (memberId: string) => {
+    if (deleteCode === 'FARDIN') {
+      removeMember(memberId);
+      setDeleteDialogOpen(null);
+      setDeleteCode('');
+      setDeleteError(false);
+    } else {
+      setDeleteError(true);
+    }
+  };
+
+  const openDeleteDialog = (memberId: string) => {
+    setDeleteCode('');
+    setDeleteError(false);
+    setDeleteDialogOpen(memberId);
   };
 
   return (
@@ -196,31 +216,14 @@ export default function Members() {
                       </div>
                     </div>
 
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive flex-shrink-0">
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>সদস্য মুছে ফেলুন?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            আপনি কি নিশ্চিত যে আপনি "{member.name}" কে মুছে ফেলতে চান? 
-                            এই সদস্যের সমস্ত উপস্থিতি তথ্যও মুছে যাবে।
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>বাতিল</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() => removeMember(member.id)}
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                          >
-                            মুছে ফেলুন
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="text-destructive hover:text-destructive flex-shrink-0"
+                      onClick={() => openDeleteDialog(member.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
@@ -255,6 +258,53 @@ export default function Members() {
             >
               সংরক্ষণ করুন
             </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Member Dialog with Secret Code */}
+      <Dialog open={deleteDialogOpen !== null} onOpenChange={(open) => !open && setDeleteDialogOpen(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>সদস্য মুছে ফেলুন</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            <p className="text-sm text-muted-foreground">
+              এই সদস্যের সমস্ত উপস্থিতি তথ্যও মুছে যাবে। মুছে ফেলতে গোপন কোড লিখুন।
+            </p>
+            <div className="space-y-2">
+              <Label htmlFor="delete-code">গোপন কোড</Label>
+              <Input
+                id="delete-code"
+                type="password"
+                placeholder="গোপন কোড লিখুন"
+                value={deleteCode}
+                onChange={(e) => {
+                  setDeleteCode(e.target.value);
+                  setDeleteError(false);
+                }}
+                className={deleteError ? 'border-destructive' : ''}
+              />
+              {deleteError && (
+                <p className="text-sm text-destructive">ভুল কোড! সঠিক কোড দিন।</p>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline"
+                onClick={() => setDeleteDialogOpen(null)} 
+                className="flex-1"
+              >
+                বাতিল
+              </Button>
+              <Button 
+                variant="destructive"
+                onClick={() => deleteDialogOpen && handleDeleteMember(deleteDialogOpen)} 
+                className="flex-1"
+              >
+                মুছে ফেলুন
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
