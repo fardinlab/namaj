@@ -67,6 +67,24 @@ const AboutDeveloper = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Bio Section */}
+      <Card className="bg-card border-border">
+        <CardContent className="p-6">
+          <h3 className="text-lg font-semibold text-foreground mb-4">About</h3>
+          <div className="space-y-4 text-muted-foreground leading-relaxed font-serif">
+            <p>
+              Fardin Sagor is a computer engineering student and aspiring software developer from Bangladesh. He is passionate about building practical digital solutions, modern web applications, and community-focused platforms. Alongside software development, he has experience in digital marketing, SEO, and online productivity tools.
+            </p>
+            <p>
+              He works with web technologies, UI-focused applications, and cloud-based systems, aiming to create simple, user-friendly, and impactful products. Fardin Sagor believes in using technology to solve real-world problems and support community and educational initiatives.
+            </p>
+            <p>
+              Driven by continuous learning and innovation, he actively explores new tools and platforms to improve his technical and professional skills.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
