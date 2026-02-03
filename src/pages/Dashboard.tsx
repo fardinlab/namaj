@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Star, Calendar, Flame, Trophy, Target } from 'lucide-react';
 
 export default function Dashboard() {
-  const { members, attendance, getAttendanceForDate, togglePrayer, getMemberStats } = useCampaignData();
+  const { members, attendance, getAttendanceForDate, togglePrayer, getMemberStats, config } = useCampaignData();
   const [selectedMemberId, setSelectedMemberId] = useState<string>('');
 
   const today = new Date();
@@ -153,7 +153,7 @@ export default function Dashboard() {
           )}
 
           {/* Calendar */}
-          <CalendarGrid attendance={attendance} memberId={selectedMemberId} />
+          <CalendarGrid attendance={attendance} memberId={selectedMemberId} config={config} />
         </>
       )}
     </div>

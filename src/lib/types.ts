@@ -34,7 +34,7 @@ export const PRAYER_NAMES: Record<PrayerName, string> = {
   isha: 'এশা',
 };
 
-export const CAMPAIGN_CONFIG: CampaignConfig = {
+export const DEFAULT_CAMPAIGN_CONFIG: CampaignConfig = {
   startDate: '2026-02-04',
   endDate: '2026-03-25',
   streakTarget: 41,
