@@ -8,7 +8,8 @@ import {
   Settings,
   Menu,
   X,
-  Moon
+  Moon,
+  Code
 } from 'lucide-react';
 import { AppNavLink } from './AppNavLink';
 import { Button } from '@/components/ui/button';
@@ -20,6 +21,7 @@ const navItems = [
   { to: '/leaderboard', icon: Trophy, label: 'লিডারবোর্ড' },
   { to: '/campaign', icon: Info, label: 'ক্যাম্পেইনের তথ্য' },
   { to: '/settings', icon: Settings, label: 'সেটিংস' },
+  { to: '/about-developer', icon: Code, label: 'About Developer' },
 ];
 
 export function AppLayout() {
