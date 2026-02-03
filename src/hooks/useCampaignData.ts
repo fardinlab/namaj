@@ -1,25 +1,26 @@
-import { useMemo, useEffect, useRef } from 'react';
+import { useMemo } from 'react';
 import { useLocalStorage } from './useLocalStorage';
 import { Member, AttendanceRecord, CampaignConfig, DEFAULT_CAMPAIGN_CONFIG, PrayerName } from '@/lib/types';
+
+// One-time cleanup on module load: Remove attendance before Feb 4, 2026
+const CAMPAIGN_START_DATE = '2026-02-04';
+const storedAttendance = localStorage.getItem('campaign-attendance');
+if (storedAttendance) {
+  try {
+    const parsed = JSON.parse(storedAttendance) as AttendanceRecord[];
+    const filtered = parsed.filter(a => a.date >= CAMPAIGN_START_DATE);
+    if (filtered.length !== parsed.length) {
+      localStorage.setItem('campaign-attendance', JSON.stringify(filtered));
+    }
+  } catch (e) {
+    // ignore parsing errors
+  }
+}
 
 export function useCampaignData() {
   const [members, setMembers] = useLocalStorage<Member[]>('campaign-members', []);
   const [attendance, setAttendance] = useLocalStorage<AttendanceRecord[]>('campaign-attendance', []);
   const [config, setConfig] = useLocalStorage<CampaignConfig>('campaign-config', DEFAULT_CAMPAIGN_CONFIG);
-  
-  const hasCleanedUp = useRef(false);
-  
-  // One-time cleanup: Remove all attendance before Feb 4, 2026
-  useEffect(() => {
-    if (!hasCleanedUp.current) {
-      hasCleanedUp.current = true;
-      const campaignStartDate = '2026-02-04';
-      const hasOldData = attendance.some(a => a.date < campaignStartDate);
-      if (hasOldData) {
-        setAttendance(prev => prev.filter(a => a.date >= campaignStartDate));
-      }
-    }
-  }, []);
 
   const addMember = (name: string, phone?: string) => {
     const newMember: Member = {
