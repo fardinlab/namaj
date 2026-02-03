@@ -1,6 +1,5 @@
 import { useRef, useState } from 'react';
-import { Camera, X, Loader2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Camera, Loader2 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from 'sonner';
 
@@ -150,8 +149,8 @@ export function MemberPhotoUpload({ photo, name, onPhotoChange, size = 'md' }: M
       />
       
       <div 
-        className={`relative cursor-pointer group ${isCompressing ? 'pointer-events-none' : ''}`}
-        onClick={() => fileInputRef.current?.click()}
+        className={`relative ${!photo ? 'cursor-pointer group' : ''} ${isCompressing ? 'pointer-events-none' : ''}`}
+        onClick={() => !photo && fileInputRef.current?.click()}
       >
         <Avatar className={`${sizeClasses[size]} border-2 border-border`}>
           <AvatarImage src={photo} alt={name} />
@@ -160,14 +159,16 @@ export function MemberPhotoUpload({ photo, name, onPhotoChange, size = 'md' }: M
           </AvatarFallback>
         </Avatar>
         
-        {/* Upload overlay */}
-        <div className={`absolute inset-0 rounded-full bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity ${sizeClasses[size]}`}>
-          {isCompressing ? (
-            <Loader2 className="h-4 w-4 text-white animate-spin" />
-          ) : (
-            <Camera className="h-4 w-4 text-white" />
-          )}
-        </div>
+        {/* Upload overlay - only show when no photo */}
+        {!photo && (
+          <div className={`absolute inset-0 rounded-full bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity ${sizeClasses[size]}`}>
+            {isCompressing ? (
+              <Loader2 className="h-4 w-4 text-white animate-spin" />
+            ) : (
+              <Camera className="h-4 w-4 text-white" />
+            )}
+          </div>
+        )}
 
         {/* Loading state overlay */}
         {isCompressing && (
@@ -176,18 +177,6 @@ export function MemberPhotoUpload({ photo, name, onPhotoChange, size = 'md' }: M
           </div>
         )}
       </div>
-
-      {/* Remove button */}
-      {photo && !isCompressing && (
-        <Button
-          variant="destructive"
-          size="icon"
-          className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0 z-10 shadow-md"
-          onClick={handleRemovePhoto}
-        >
-          <X className="h-3.5 w-3.5" />
-        </Button>
-      )}
     </div>
   );
 }
