@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useEffect, useRef } from 'react';
 import { useLocalStorage } from './useLocalStorage';
 import { Member, AttendanceRecord, CampaignConfig, DEFAULT_CAMPAIGN_CONFIG, PrayerName } from '@/lib/types';
 
@@ -6,6 +6,20 @@ export function useCampaignData() {
   const [members, setMembers] = useLocalStorage<Member[]>('campaign-members', []);
   const [attendance, setAttendance] = useLocalStorage<AttendanceRecord[]>('campaign-attendance', []);
   const [config, setConfig] = useLocalStorage<CampaignConfig>('campaign-config', DEFAULT_CAMPAIGN_CONFIG);
+  
+  const hasCleanedUp = useRef(false);
+  
+  // One-time cleanup: Remove all attendance before Feb 4, 2026
+  useEffect(() => {
+    if (!hasCleanedUp.current) {
+      hasCleanedUp.current = true;
+      const campaignStartDate = '2026-02-04';
+      const hasOldData = attendance.some(a => a.date < campaignStartDate);
+      if (hasOldData) {
+        setAttendance(prev => prev.filter(a => a.date >= campaignStartDate));
+      }
+    }
+  }, []);
 
   const addMember = (name: string, phone?: string) => {
     const newMember: Member = {
