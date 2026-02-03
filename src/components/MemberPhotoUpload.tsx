@@ -1,5 +1,5 @@
-import { useRef } from 'react';
-import { Camera, X } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { Camera, X, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from 'sonner';
@@ -14,8 +14,70 @@ interface MemberPhotoUploadProps {
 const MAX_SIZE_KB = 100;
 const MAX_SIZE_BYTES = MAX_SIZE_KB * 1024;
 
+// Compress image to target size
+const compressImage = (file: File, maxSizeBytes: number): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+
+    img.onload = () => {
+      let width = img.width;
+      let height = img.height;
+      let quality = 0.9;
+
+      const tryCompress = () => {
+        // Scale down if image is too large
+        const maxDimension = 400;
+        if (width > maxDimension || height > maxDimension) {
+          if (width > height) {
+            height = (height / width) * maxDimension;
+            width = maxDimension;
+          } else {
+            width = (width / height) * maxDimension;
+            height = maxDimension;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        ctx?.drawImage(img, 0, 0, width, height);
+
+        const compress = (q: number): string => {
+          return canvas.toDataURL('image/jpeg', q);
+        };
+
+        // Try different quality levels to get under max size
+        let result = compress(quality);
+        while (result.length > maxSizeBytes * 1.37 && quality > 0.1) { // 1.37 accounts for base64 overhead
+          quality -= 0.1;
+          result = compress(quality);
+        }
+
+        // If still too large, reduce dimensions further
+        if (result.length > maxSizeBytes * 1.37 && width > 100) {
+          width = width * 0.7;
+          height = height * 0.7;
+          canvas.width = width;
+          canvas.height = height;
+          ctx?.drawImage(img, 0, 0, width, height);
+          result = compress(0.7);
+        }
+
+        resolve(result);
+      };
+
+      tryCompress();
+    };
+
+    img.onerror = () => reject(new Error('Failed to load image'));
+    img.src = URL.createObjectURL(file);
+  });
+};
+
 export function MemberPhotoUpload({ photo, name, onPhotoChange, size = 'md' }: MemberPhotoUploadProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isCompressing, setIsCompressing] = useState(false);
 
   const sizeClasses = {
     sm: 'h-10 w-10',
@@ -23,7 +85,7 @@ export function MemberPhotoUpload({ photo, name, onPhotoChange, size = 'md' }: M
     lg: 'h-24 w-24',
   };
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -33,27 +95,37 @@ export function MemberPhotoUpload({ photo, name, onPhotoChange, size = 'md' }: M
       return;
     }
 
-    // Check file size
-    if (file.size > MAX_SIZE_BYTES) {
-      toast.error(`ছবির সাইজ সর্বোচ্চ ${MAX_SIZE_KB} কেবি হতে হবে`);
-      return;
-    }
+    setIsCompressing(true);
 
-    // Convert to base64
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const base64 = event.target?.result as string;
+    try {
+      let base64: string;
+
+      if (file.size <= MAX_SIZE_BYTES) {
+        // File is already small enough, just read it
+        base64 = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (event) => resolve(event.target?.result as string);
+          reader.onerror = () => reject(new Error('Failed to read file'));
+          reader.readAsDataURL(file);
+        });
+      } else {
+        // Compress the image
+        base64 = await compressImage(file, MAX_SIZE_BYTES);
+        toast.success('ছবি সংকুচিত করে যোগ করা হয়েছে');
+      }
+
       onPhotoChange(base64);
-      toast.success('ছবি যোগ করা হয়েছে');
-    };
-    reader.onerror = () => {
-      toast.error('ছবি পড়তে সমস্যা হয়েছে');
-    };
-    reader.readAsDataURL(file);
-
-    // Reset input
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+      if (file.size <= MAX_SIZE_BYTES) {
+        toast.success('ছবি যোগ করা হয়েছে');
+      }
+    } catch (error) {
+      toast.error('ছবি প্রসেস করতে সমস্যা হয়েছে');
+    } finally {
+      setIsCompressing(false);
+      // Reset input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
@@ -78,7 +150,7 @@ export function MemberPhotoUpload({ photo, name, onPhotoChange, size = 'md' }: M
       />
       
       <div 
-        className="relative cursor-pointer group"
+        className={`relative cursor-pointer group ${isCompressing ? 'pointer-events-none' : ''}`}
         onClick={() => fileInputRef.current?.click()}
       >
         <Avatar className={`${sizeClasses[size]} border-2 border-border`}>
@@ -90,8 +162,19 @@ export function MemberPhotoUpload({ photo, name, onPhotoChange, size = 'md' }: M
         
         {/* Upload overlay */}
         <div className={`absolute inset-0 rounded-full bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity ${sizeClasses[size]}`}>
-          <Camera className="h-4 w-4 text-white" />
+          {isCompressing ? (
+            <Loader2 className="h-4 w-4 text-white animate-spin" />
+          ) : (
+            <Camera className="h-4 w-4 text-white" />
+          )}
         </div>
+
+        {/* Loading state overlay */}
+        {isCompressing && (
+          <div className={`absolute inset-0 rounded-full bg-black/50 flex items-center justify-center ${sizeClasses[size]}`}>
+            <Loader2 className="h-4 w-4 text-white animate-spin" />
+          </div>
+        )}
       </div>
 
       {/* Remove button */}
