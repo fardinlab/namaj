@@ -24,14 +24,16 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Plus, Search, Star, Calendar, Flame, Trash2 } from 'lucide-react';
+import { Plus, Search, Star, Calendar, Flame, Trash2, Phone } from 'lucide-react';
 
 export default function Members() {
-  const { members, addMember, removeMember, updateMemberPhoto, getMemberStats } = useCampaignData();
+  const { members, addMember, removeMember, updateMemberPhoto, updateMemberPhone, getMemberStats } = useCampaignData();
   const [searchQuery, setSearchQuery] = useState('');
   const [newMemberName, setNewMemberName] = useState('');
   const [newMemberPhone, setNewMemberPhone] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [phoneDialogOpen, setPhoneDialogOpen] = useState<string | null>(null);
+  const [editPhone, setEditPhone] = useState('');
 
   const filteredMembers = members.filter(member =>
     member.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -44,6 +46,19 @@ export default function Members() {
       setNewMemberPhone('');
       setDialogOpen(false);
     }
+  };
+
+  const handleAddPhone = (memberId: string) => {
+    if (editPhone.trim()) {
+      updateMemberPhone(memberId, editPhone.trim());
+      setPhoneDialogOpen(null);
+      setEditPhone('');
+    }
+  };
+
+  const openPhoneDialog = (memberId: string, currentPhone?: string) => {
+    setEditPhone(currentPhone || '');
+    setPhoneDialogOpen(memberId);
   };
 
   return (
@@ -131,7 +146,7 @@ export default function Members() {
                     />
 
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-2">
+                      <div className="flex items-center gap-2 mb-1">
                         <h3 className="text-lg font-semibold truncate">{member.name}</h3>
                         {stats.isWinner && (
                           <span className="bg-primary/10 text-primary text-xs px-2 py-1 rounded-full flex-shrink-0">
@@ -139,6 +154,22 @@ export default function Members() {
                           </span>
                         )}
                       </div>
+                      
+                      {/* Phone number */}
+                      {member.phone ? (
+                        <div className="flex items-center gap-1.5 text-sm text-muted-foreground mb-2">
+                          <Phone className="h-3.5 w-3.5" />
+                          <span>{member.phone}</span>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => openPhoneDialog(member.id)}
+                          className="flex items-center gap-1.5 text-sm text-primary hover:underline mb-2"
+                        >
+                          <Phone className="h-3.5 w-3.5" />
+                          <span>নম্বর যোগ করুন</span>
+                        </button>
+                      )}
                       
                       <div className="grid grid-cols-3 gap-4 text-sm">
                         <div className="flex items-center gap-2">
@@ -201,6 +232,32 @@ export default function Members() {
       <p className="text-center text-sm text-muted-foreground">
         মোট সদস্য: {toBanglaNumber(members.length)} জন
       </p>
+
+      {/* Phone Number Dialog */}
+      <Dialog open={phoneDialogOpen !== null} onOpenChange={(open) => !open && setPhoneDialogOpen(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>ফোন নম্বর যোগ করুন</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-phone">ফোন নম্বর</Label>
+              <Input
+                id="edit-phone"
+                placeholder="ফোন নম্বর লিখুন"
+                value={editPhone}
+                onChange={(e) => setEditPhone(e.target.value)}
+              />
+            </div>
+            <Button 
+              onClick={() => phoneDialogOpen && handleAddPhone(phoneDialogOpen)} 
+              className="w-full"
+            >
+              সংরক্ষণ করুন
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -24,6 +24,12 @@ export function useCampaignData() {
     ));
   };
 
+  const updateMemberPhone = (memberId: string, phone: string | undefined) => {
+    setMembers(prev => prev.map(m => 
+      m.id === memberId ? { ...m, phone } : m
+    ));
+  };
+
   const removeMember = (memberId: string) => {
     setMembers(prev => prev.filter(m => m.id !== memberId));
     setAttendance(prev => prev.filter(a => a.memberId !== memberId));
@@ -152,6 +158,7 @@ export function useCampaignData() {
     attendance,
     addMember,
     updateMemberPhoto,
+    updateMemberPhone,
     removeMember,
     getAttendanceForDate,
     togglePrayer,
