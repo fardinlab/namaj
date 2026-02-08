@@ -63,10 +63,55 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Check if user already exists first
     const { data: existingUsers } = await supabase.auth.admin.listUsers();
-    const userExists = existingUsers?.users?.some(u => u.email === email);
+    const existingUser = existingUsers?.users?.find(u => u.email === email);
     
-    if (userExists) {
-      // Clean up verification code
+    if (existingUser) {
+      // User exists - check if email is confirmed
+      if (!existingUser.email_confirmed_at) {
+        // Email not confirmed - confirm it now and update password
+        const { error: updateError } = await supabase.auth.admin.updateUserById(
+          existingUser.id,
+          {
+            email_confirm: true,
+            password: password,
+          }
+        );
+
+        if (updateError) {
+          console.error("Error updating user:", updateError);
+          return new Response(
+            JSON.stringify({ 
+              success: false, 
+              error: "অ্যাকাউন্ট আপডেট করতে সমস্যা হয়েছে।" 
+            }),
+            {
+              status: 200,
+              headers: { "Content-Type": "application/json", ...corsHeaders },
+            }
+          );
+        }
+
+        // Clean up verification code
+        await supabase
+          .from("email_verification_codes")
+          .delete()
+          .eq("id", verificationData.id);
+
+        console.log("User email confirmed and password updated:", existingUser.id);
+
+        return new Response(
+          JSON.stringify({ 
+            success: true, 
+            message: "Account verified successfully" 
+          }),
+          {
+            status: 200,
+            headers: { "Content-Type": "application/json", ...corsHeaders },
+          }
+        );
+      }
+
+      // Email already confirmed - tell user to login
       await supabase
         .from("email_verification_codes")
         .delete()
@@ -75,7 +120,7 @@ const handler = async (req: Request): Promise<Response> => {
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: "এই ইমেইল দিয়ে আগেই অ্যাকাউন্ট তৈরি করা হয়েছে। লগইন করুন।" 
+          error: "এই ইমেইল দিয়ে আগেই অ্যাকাউন্ট তৈরি এবং ভেরিফাই করা হয়েছে। লগইন করুন।" 
         }),
         {
           status: 200,
