@@ -17,6 +17,7 @@ import { AppNavLink } from './AppNavLink';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
+import { NetworkStatus } from './NetworkStatus';
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'ড্যাশবোর্ড' },
@@ -174,6 +175,9 @@ export function AppLayout() {
         <main className="flex-1 p-4 lg:p-8 mosque-bg">
           <Outlet />
         </main>
+        
+        {/* Offline status indicator */}
+        <NetworkStatus />
       </div>
     </div>
   );
