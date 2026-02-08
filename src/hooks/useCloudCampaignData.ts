@@ -1,7 +1,10 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { PrayerName, CampaignConfig, DEFAULT_CAMPAIGN_CONFIG } from '@/lib/types';
+import { useIndexedDB } from './useIndexedDB';
+import { useOnlineStatus } from './useOnlineStatus';
+import { toast } from '@/hooks/use-toast';
 
 export interface CloudMember {
   id: string;
@@ -23,23 +26,224 @@ export interface CloudAttendance {
   isha: boolean;
 }
 
+interface CachedConfig extends CampaignConfig {
+  id: string;
+}
+
 export function useCloudCampaignData() {
   const { user } = useAuth();
   const [members, setMembers] = useState<CloudMember[]>([]);
   const [attendance, setAttendance] = useState<CloudAttendance[]>([]);
   const [config, setConfig] = useState<CampaignConfig>(DEFAULT_CAMPAIGN_CONFIG);
+  const [configId, setConfigId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Offline support hooks
+  const { isOnline, wasOffline, resetWasOffline } = useOnlineStatus();
+  const { 
+    isReady: dbReady, 
+    getAll, 
+    putMany, 
+    put, 
+    remove, 
+    clear,
+    addToSyncQueue,
+    getSyncQueue,
+    removeFromSyncQueue,
+  } = useIndexedDB();
+
+  const isSyncing = useRef(false);
+  const hasLoadedFromCache = useRef(false);
+
+  // Load from IndexedDB cache first
+  useEffect(() => {
+    if (dbReady && !hasLoadedFromCache.current) {
+      loadFromCache();
+      hasLoadedFromCache.current = true;
+    }
+  }, [dbReady]);
+
+  const loadFromCache = async () => {
+    try {
+      console.log('Loading from IndexedDB cache...');
+      
+      const [cachedMembers, cachedAttendance, cachedConfig] = await Promise.all([
+        getAll<CloudMember>('members'),
+        getAll<CloudAttendance>('attendance'),
+        getAll<CachedConfig>('config'),
+      ]);
+
+      if (cachedMembers.length > 0) {
+        setMembers(cachedMembers);
+        console.log(`Loaded ${cachedMembers.length} members from cache`);
+      }
+
+      if (cachedAttendance.length > 0) {
+        setAttendance(cachedAttendance);
+        console.log(`Loaded ${cachedAttendance.length} attendance records from cache`);
+      }
+
+      if (cachedConfig.length > 0) {
+        const cfg = cachedConfig[0];
+        setConfig({
+          startDate: cfg.startDate,
+          endDate: cfg.endDate,
+          streakTarget: cfg.streakTarget,
+        });
+        setConfigId(cfg.id);
+        console.log('Loaded config from cache');
+      }
+
+      // If we have cached data, mark loading as done
+      if (cachedMembers.length > 0 || cachedAttendance.length > 0) {
+        setLoading(false);
+      }
+    } catch (err) {
+      console.error('Error loading from cache:', err);
+    }
+  };
+
+  // Save to IndexedDB cache
+  const saveToCache = async (
+    newMembers?: CloudMember[],
+    newAttendance?: CloudAttendance[],
+    newConfig?: CachedConfig
+  ) => {
+    if (!dbReady) return;
+
+    try {
+      if (newMembers) {
+        await clear('members');
+        await putMany('members', newMembers);
+      }
+      if (newAttendance) {
+        await clear('attendance');
+        await putMany('attendance', newAttendance);
+      }
+      if (newConfig) {
+        await clear('config');
+        await put('config', newConfig);
+      }
+    } catch (err) {
+      console.error('Error saving to cache:', err);
+    }
+  };
+
   // Fetch all data on mount
   useEffect(() => {
-    if (user) {
+    if (user && isOnline) {
       fetchAllData();
       setupRealtimeSubscription();
     }
-  }, [user]);
+  }, [user, isOnline]);
+
+  // Sync when coming back online
+  useEffect(() => {
+    if (isOnline && wasOffline && dbReady) {
+      console.log('Back online - syncing pending changes...');
+      syncPendingChanges().then(() => {
+        resetWasOffline();
+        fetchAllData(); // Refresh from cloud
+      });
+    }
+  }, [isOnline, wasOffline, dbReady]);
+
+  const syncPendingChanges = async () => {
+    if (isSyncing.current) return;
+    isSyncing.current = true;
+
+    try {
+      const queue = await getSyncQueue();
+      
+      if (queue.length === 0) {
+        isSyncing.current = false;
+        return;
+      }
+
+      console.log(`Syncing ${queue.length} pending changes...`);
+      
+      const sortedQueue = queue.sort((a, b) => a.timestamp - b.timestamp);
+      
+      let successCount = 0;
+      let failCount = 0;
+
+      for (const item of sortedQueue) {
+        try {
+          const { store, action, data } = item;
+          
+          if (store === 'members') {
+            if (action === 'add') {
+              const memberInsert = data as { name: string; phone?: string | null; created_by?: string | null };
+              await supabase.from('members').insert(memberInsert);
+            } else if (action === 'update') {
+              const memberData = data as { id: string; phone?: string | null; photo_url?: string | null };
+              const { id, ...updateData } = memberData;
+              await supabase.from('members').update(updateData).eq('id', id);
+            } else if (action === 'delete') {
+              await supabase.from('members').delete().eq('id', (data as { id: string }).id);
+            }
+          } else if (store === 'attendance') {
+            if (action === 'add') {
+              const attInsert = data as { 
+                member_id: string; 
+                date: string; 
+                fajr?: boolean; 
+                zuhr?: boolean; 
+                asr?: boolean; 
+                maghrib?: boolean; 
+                isha?: boolean;
+                updated_by?: string | null;
+              };
+              await supabase.from('attendance').insert(attInsert);
+            } else if (action === 'update') {
+              const attData = data as { id: string; [key: string]: unknown };
+              const { id, ...updateData } = attData;
+              await supabase.from('attendance').update(updateData).eq('id', id);
+            }
+          } else if (store === 'config') {
+            if (action === 'update') {
+              const cfgData = data as { id: string; [key: string]: unknown };
+              const { id, ...updateData } = cfgData;
+              await supabase.from('campaign_config').update(updateData).eq('id', id);
+            }
+          }
+
+          await removeFromSyncQueue(item.id);
+          successCount++;
+        } catch (err) {
+          console.error('Sync item failed:', err);
+          failCount++;
+        }
+      }
+
+      if (successCount > 0) {
+        toast({
+          title: 'ডাটা sync হয়েছে ✓',
+          description: `${successCount}টি পরিবর্তন Cloud এ সংরক্ষিত হয়েছে`,
+        });
+      }
+
+      if (failCount > 0) {
+        toast({
+          title: 'কিছু sync হয়নি',
+          description: `${failCount}টি পরিবর্তন sync করতে সমস্যা হয়েছে`,
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
+      console.error('Sync failed:', error);
+    } finally {
+      isSyncing.current = false;
+    }
+  };
 
   const fetchAllData = async () => {
+    if (!isOnline) {
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     setError(null);
     try {
@@ -64,6 +268,11 @@ export function useCloudCampaignData() {
     
     if (error) throw error;
     setMembers(data || []);
+    
+    // Cache to IndexedDB
+    if (data && dbReady) {
+      saveToCache(data, undefined, undefined);
+    }
   };
 
   const fetchAttendance = async () => {
@@ -74,6 +283,11 @@ export function useCloudCampaignData() {
     
     if (error) throw error;
     setAttendance(data || []);
+    
+    // Cache to IndexedDB
+    if (data && dbReady) {
+      saveToCache(undefined, data, undefined);
+    }
   };
 
   const fetchConfig = async () => {
@@ -85,11 +299,23 @@ export function useCloudCampaignData() {
     
     if (error) throw error;
     if (data) {
-      setConfig({
+      const cfg: CachedConfig = {
+        id: data.id,
         startDate: data.start_date,
         endDate: data.end_date,
-        streakTarget: data.streak_target
+        streakTarget: data.streak_target,
+      };
+      setConfig({
+        startDate: cfg.startDate,
+        endDate: cfg.endDate,
+        streakTarget: cfg.streakTarget,
       });
+      setConfigId(data.id);
+      
+      // Cache to IndexedDB
+      if (dbReady) {
+        saveToCache(undefined, undefined, cfg);
+      }
     }
   };
 
@@ -97,14 +323,14 @@ export function useCloudCampaignData() {
     const membersChannel = supabase
       .channel('members-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'members' }, () => {
-        fetchMembers();
+        if (isOnline) fetchMembers();
       })
       .subscribe();
 
     const attendanceChannel = supabase
       .channel('attendance-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'attendance' }, () => {
-        fetchAttendance();
+        if (isOnline) fetchAttendance();
       })
       .subscribe();
 
@@ -115,45 +341,166 @@ export function useCloudCampaignData() {
   };
 
   const addMember = async (name: string, phone?: string) => {
-    const { data, error } = await supabase
-      .from('members')
-      .insert({
+    const newMember: Omit<CloudMember, 'id' | 'created_at'> = {
+      name,
+      phone: phone || null,
+      photo_url: null,
+      created_by: user?.id || null,
+    };
+
+    if (isOnline) {
+      const { data, error } = await supabase
+        .from('members')
+        .insert({
+          name,
+          phone: phone || null,
+          created_by: user?.id
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      
+      // Update local cache
+      if (data && dbReady) {
+        await put('members', data);
+      }
+      
+      return data;
+    } else {
+      // Offline: Create temporary member and queue for sync
+      const tempMember: CloudMember = {
+        id: `temp_${Date.now()}`,
         name,
         phone: phone || null,
-        created_by: user?.id
-      })
-      .select()
-      .single();
+        photo_url: null,
+        created_at: new Date().toISOString(),
+        created_by: user?.id || null,
+      };
 
-    if (error) throw error;
-    return data;
+      // Save to IndexedDB
+      if (dbReady) {
+        await put('members', tempMember);
+        await addToSyncQueue({
+          store: 'members',
+          action: 'add',
+          data: { name, phone: phone || null, created_by: user?.id || null },
+        });
+      }
+
+      // Update state
+      setMembers(prev => [...prev, tempMember]);
+      
+      toast({
+        title: 'Offline এ সংরক্ষিত',
+        description: 'Online হলে Cloud এ sync হবে',
+      });
+
+      return tempMember;
+    }
   };
 
   const updateMemberPhoto = async (memberId: string, photoUrl: string | null) => {
-    const { error } = await supabase
-      .from('members')
-      .update({ photo_url: photoUrl })
-      .eq('id', memberId);
+    if (isOnline) {
+      const { error } = await supabase
+        .from('members')
+        .update({ photo_url: photoUrl })
+        .eq('id', memberId);
 
-    if (error) throw error;
+      if (error) throw error;
+    } else {
+      // Queue for sync
+      if (dbReady) {
+        await addToSyncQueue({
+          store: 'members',
+          action: 'update',
+          data: { id: memberId, photo_url: photoUrl },
+        });
+      }
+
+      toast({
+        title: 'Offline এ সংরক্ষিত',
+        description: 'Online হলে sync হবে',
+      });
+    }
+
+    // Update local state and cache
+    setMembers(prev => prev.map(m => 
+      m.id === memberId ? { ...m, photo_url: photoUrl } : m
+    ));
+
+    if (dbReady) {
+      const member = members.find(m => m.id === memberId);
+      if (member) {
+        await put('members', { ...member, photo_url: photoUrl });
+      }
+    }
   };
 
   const updateMemberPhone = async (memberId: string, phone: string | null) => {
-    const { error } = await supabase
-      .from('members')
-      .update({ phone })
-      .eq('id', memberId);
+    if (isOnline) {
+      const { error } = await supabase
+        .from('members')
+        .update({ phone })
+        .eq('id', memberId);
 
-    if (error) throw error;
+      if (error) throw error;
+    } else {
+      if (dbReady) {
+        await addToSyncQueue({
+          store: 'members',
+          action: 'update',
+          data: { id: memberId, phone },
+        });
+      }
+
+      toast({
+        title: 'Offline এ সংরক্ষিত',
+        description: 'Online হলে sync হবে',
+      });
+    }
+
+    setMembers(prev => prev.map(m => 
+      m.id === memberId ? { ...m, phone } : m
+    ));
+
+    if (dbReady) {
+      const member = members.find(m => m.id === memberId);
+      if (member) {
+        await put('members', { ...member, phone });
+      }
+    }
   };
 
   const removeMember = async (memberId: string) => {
-    const { error } = await supabase
-      .from('members')
-      .delete()
-      .eq('id', memberId);
+    if (isOnline) {
+      const { error } = await supabase
+        .from('members')
+        .delete()
+        .eq('id', memberId);
 
-    if (error) throw error;
+      if (error) throw error;
+    } else {
+      if (dbReady) {
+        await addToSyncQueue({
+          store: 'members',
+          action: 'delete',
+          data: { id: memberId },
+        });
+      }
+
+      toast({
+        title: 'Offline এ মুছে ফেলা হয়েছে',
+        description: 'Online হলে Cloud থেকেও মুছে যাবে',
+      });
+    }
+
+    // Update local state and cache
+    setMembers(prev => prev.filter(m => m.id !== memberId));
+
+    if (dbReady) {
+      await remove('members', memberId);
+    }
   };
 
   const getAttendanceForDate = useCallback((memberId: string, date: string): CloudAttendance | undefined => {
@@ -164,27 +511,44 @@ export function useCloudCampaignData() {
     const existing = attendance.find(a => a.member_id === memberId && a.date === date);
     
     if (existing) {
-      // Update existing record
-      const { error } = await supabase
-        .from('attendance')
-        .update({
-          [prayer]: !existing[prayer],
-          updated_at: new Date().toISOString(),
-          updated_by: user?.id
-        })
-        .eq('id', existing.id);
+      const updatedRecord = { ...existing, [prayer]: !existing[prayer] };
 
-      if (error) throw error;
-      
       // Optimistic update
       setAttendance(prev => prev.map(a => 
-        a.id === existing.id 
-          ? { ...a, [prayer]: !a[prayer] }
-          : a
+        a.id === existing.id ? updatedRecord : a
       ));
+
+      if (dbReady) {
+        await put('attendance', updatedRecord);
+      }
+
+      if (isOnline) {
+        const { error } = await supabase
+          .from('attendance')
+          .update({
+            [prayer]: !existing[prayer],
+            updated_at: new Date().toISOString(),
+            updated_by: user?.id
+          })
+          .eq('id', existing.id);
+
+        if (error) throw error;
+      } else {
+        await addToSyncQueue({
+          store: 'attendance',
+          action: 'update',
+          data: {
+            id: existing.id,
+            [prayer]: !existing[prayer],
+            updated_at: new Date().toISOString(),
+            updated_by: user?.id,
+          },
+        });
+      }
     } else {
       // Create new record
-      const newRecord = {
+      const newRecord: CloudAttendance = {
+        id: isOnline ? '' : `temp_${Date.now()}`,
         member_id: memberId,
         date,
         fajr: prayer === 'fajr',
@@ -192,31 +556,67 @@ export function useCloudCampaignData() {
         asr: prayer === 'asr',
         maghrib: prayer === 'maghrib',
         isha: prayer === 'isha',
-        updated_by: user?.id
       };
 
-      const { data, error } = await supabase
-        .from('attendance')
-        .insert(newRecord)
-        .select()
-        .single();
+      if (isOnline) {
+        const { data, error } = await supabase
+          .from('attendance')
+          .insert({
+            member_id: memberId,
+            date,
+            fajr: prayer === 'fajr',
+            zuhr: prayer === 'zuhr',
+            asr: prayer === 'asr',
+            maghrib: prayer === 'maghrib',
+            isha: prayer === 'isha',
+            updated_by: user?.id
+          })
+          .select()
+          .single();
 
-      if (error) throw error;
-      
-      // Optimistic update
-      if (data) {
-        setAttendance(prev => [...prev, data]);
+        if (error) throw error;
+        
+        if (data) {
+          setAttendance(prev => [...prev, data]);
+          if (dbReady) {
+            await put('attendance', data);
+          }
+        }
+      } else {
+        // Offline: save locally and queue
+        setAttendance(prev => [...prev, newRecord]);
+        
+        if (dbReady) {
+          await put('attendance', newRecord);
+          await addToSyncQueue({
+            store: 'attendance',
+            action: 'add',
+            data: {
+              member_id: memberId,
+              date,
+              fajr: prayer === 'fajr',
+              zuhr: prayer === 'zuhr',
+              asr: prayer === 'asr',
+              maghrib: prayer === 'maghrib',
+              isha: prayer === 'isha',
+              updated_by: user?.id,
+            },
+          });
+        }
       }
     }
   };
 
   const deleteAttendanceByDate = async (date: string) => {
-    const { error } = await supabase
-      .from('attendance')
-      .delete()
-      .eq('date', date);
+    if (isOnline) {
+      const { error } = await supabase
+        .from('attendance')
+        .delete()
+        .eq('date', date);
 
-    if (error) throw error;
+      if (error) throw error;
+    }
+
     setAttendance(prev => prev.filter(a => a.date !== date));
   };
 
@@ -304,28 +704,54 @@ export function useCloudCampaignData() {
   }, [members, getMemberStats]);
 
   const updateConfig = async (newConfig: Partial<CampaignConfig>) => {
-    const { data: existing } = await supabase
-      .from('campaign_config')
-      .select('id')
-      .limit(1)
-      .maybeSingle();
+    const updatedConfig = { ...config, ...newConfig };
+    setConfig(updatedConfig);
 
-    if (existing) {
-      const { error } = await supabase
+    if (isOnline) {
+      const { data: existing } = await supabase
         .from('campaign_config')
-        .update({
-          start_date: newConfig.startDate ?? config.startDate,
-          end_date: newConfig.endDate ?? config.endDate,
-          streak_target: newConfig.streakTarget ?? config.streakTarget,
-          updated_at: new Date().toISOString(),
-          updated_by: user?.id
-        })
-        .eq('id', existing.id);
+        .select('id')
+        .limit(1)
+        .maybeSingle();
 
-      if (error) throw error;
+      if (existing) {
+        const { error } = await supabase
+          .from('campaign_config')
+          .update({
+            start_date: updatedConfig.startDate,
+            end_date: updatedConfig.endDate,
+            streak_target: updatedConfig.streakTarget,
+            updated_at: new Date().toISOString(),
+            updated_by: user?.id
+          })
+          .eq('id', existing.id);
+
+        if (error) throw error;
+      }
+    } else if (configId && dbReady) {
+      await addToSyncQueue({
+        store: 'config',
+        action: 'update',
+        data: {
+          id: configId,
+          start_date: updatedConfig.startDate,
+          end_date: updatedConfig.endDate,
+          streak_target: updatedConfig.streakTarget,
+          updated_at: new Date().toISOString(),
+          updated_by: user?.id,
+        },
+      });
+
+      toast({
+        title: 'Offline এ সংরক্ষিত',
+        description: 'Online হলে sync হবে',
+      });
     }
 
-    setConfig(prev => ({ ...prev, ...newConfig }));
+    // Cache to IndexedDB
+    if (dbReady && configId) {
+      await put('config', { id: configId, ...updatedConfig });
+    }
   };
 
   // Convert cloud attendance to legacy format for compatibility
@@ -361,6 +787,7 @@ export function useCloudCampaignData() {
     cloudAttendance: attendance,
     loading,
     error,
+    isOnline,
     addMember,
     updateMemberPhoto,
     updateMemberPhone,
