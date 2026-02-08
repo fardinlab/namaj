@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
-import { Search, Camera, X, Loader2, User, ChevronDown } from 'lucide-react';
+import { Search, Camera, X, Loader2, User, ChevronDown, SwitchCamera } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -21,6 +21,7 @@ export function MemberSearch({ members, onSelectMember, selectedMemberId }: Memb
   const [showCamera, setShowCamera] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
+  const [cameraFacing, setCameraFacing] = useState<'user' | 'environment'>('user');
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -34,11 +35,15 @@ export function MemberSearch({ members, onSelectMember, selectedMemberId }: Memb
     );
   });
 
-  const startCamera = useCallback(async () => {
+  const startCamera = useCallback(async (facing: 'user' | 'environment' = 'user') => {
     try {
       setCameraError(null);
+      // Stop existing stream first
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+      }
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user', width: 640, height: 480 }
+        video: { facingMode: facing, width: 640, height: 480 }
       });
       streamRef.current = stream;
       if (videoRef.current) {
@@ -50,6 +55,12 @@ export function MemberSearch({ members, onSelectMember, selectedMemberId }: Memb
     }
   }, []);
 
+  const switchCamera = useCallback(() => {
+    const newFacing = cameraFacing === 'user' ? 'environment' : 'user';
+    setCameraFacing(newFacing);
+    startCamera(newFacing);
+  }, [cameraFacing, startCamera]);
+
   const stopCamera = useCallback(() => {
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop());
@@ -59,13 +70,15 @@ export function MemberSearch({ members, onSelectMember, selectedMemberId }: Memb
 
   const handleOpenCamera = () => {
     setShowCamera(true);
-    setTimeout(startCamera, 100);
+    setCameraFacing('user');
+    setTimeout(() => startCamera('user'), 100);
   };
 
   const handleCloseCamera = () => {
     stopCamera();
     setShowCamera(false);
     setCameraError(null);
+    setCameraFacing('user');
   };
 
   const captureAndRecognize = async () => {
@@ -278,6 +291,34 @@ export function MemberSearch({ members, onSelectMember, selectedMemberId }: Memb
           </DialogHeader>
           
           <div className="space-y-4">
+            {/* Camera Selection Buttons */}
+            <div className="flex gap-2 justify-center">
+              <Button
+                variant={cameraFacing === 'user' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => {
+                  setCameraFacing('user');
+                  startCamera('user');
+                }}
+                className="flex-1"
+              >
+                <Camera className="h-4 w-4 mr-2" />
+                ফ্রন্ট ক্যামেরা
+              </Button>
+              <Button
+                variant={cameraFacing === 'environment' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => {
+                  setCameraFacing('environment');
+                  startCamera('environment');
+                }}
+                className="flex-1"
+              >
+                <SwitchCamera className="h-4 w-4 mr-2" />
+                ব্যাক ক্যামেরা
+              </Button>
+            </div>
+
             {cameraError ? (
               <div className="aspect-video bg-muted rounded-lg flex items-center justify-center">
                 <p className="text-sm text-destructive text-center px-4">{cameraError}</p>
@@ -289,7 +330,10 @@ export function MemberSearch({ members, onSelectMember, selectedMemberId }: Memb
                   autoPlay
                   playsInline
                   muted
-                  className="w-full h-full object-cover"
+                  className={cn(
+                    "w-full h-full object-cover",
+                    cameraFacing === 'user' && "scale-x-[-1]"
+                  )}
                 />
                 {isScanning && (
                   <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
