@@ -61,6 +61,29 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
+    // Check if user already exists first
+    const { data: existingUsers } = await supabase.auth.admin.listUsers();
+    const userExists = existingUsers?.users?.some(u => u.email === email);
+    
+    if (userExists) {
+      // Clean up verification code
+      await supabase
+        .from("email_verification_codes")
+        .delete()
+        .eq("id", verificationData.id);
+        
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: "এই ইমেইল দিয়ে আগেই অ্যাকাউন্ট তৈরি করা হয়েছে। লগইন করুন।" 
+        }),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
     // Mark code as verified
     await supabase
       .from("email_verification_codes")
@@ -77,20 +100,16 @@ const handler = async (req: Request): Promise<Response> => {
     if (signUpError) {
       console.error("Error creating user:", signUpError);
       
-      if (signUpError.message.includes("already been registered")) {
-        return new Response(
-          JSON.stringify({ 
-            success: false, 
-            error: "এই ইমেইল দিয়ে আগেই অ্যাকাউন্ট তৈরি করা হয়েছে" 
-          }),
-          {
-            status: 400,
-            headers: { "Content-Type": "application/json", ...corsHeaders },
-          }
-        );
-      }
-      
-      throw new Error("Failed to create user account");
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: "অ্যাকাউন্ট তৈরি করতে সমস্যা হয়েছে। আবার চেষ্টা করুন।" 
+        }),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
     }
 
     console.log("User created successfully:", userData.user?.id);
