@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   Users, 
@@ -9,11 +9,13 @@ import {
   Menu,
   X,
   Code,
-  CalendarDays
+  CalendarDays,
+  LogOut
 } from 'lucide-react';
 import { AppNavLink } from './AppNavLink';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'ড্যাশবোর্ড' },
@@ -38,7 +40,13 @@ const CrescentMoon = () => (
 
 export function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { user, signOut, isAdmin } = useAuth();
+  const navigate = useNavigate();
 
+  const handleLogout = async () => {
+    await signOut();
+    navigate('/login');
+  };
   return (
     <div className="min-h-screen flex w-full bg-background islamic-pattern">
       {/* Mobile overlay */}
@@ -94,8 +102,31 @@ export function AppLayout() {
           ))}
         </nav>
 
-        {/* Footer with Islamic greeting */}
-        <div className="p-4 border-t border-sidebar-border">
+        {/* User info and logout */}
+        <div className="p-4 border-t border-sidebar-border space-y-3">
+          {user && (
+            <div className="flex items-center justify-between gap-2 px-2">
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-sidebar-foreground/70 truncate">
+                  {user.email}
+                </p>
+                {isAdmin && (
+                  <span className="text-[10px] bg-sidebar-primary/20 text-sidebar-primary px-1.5 py-0.5 rounded-full">
+                    অ্যাডমিন
+                  </span>
+                )}
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleLogout}
+                className="text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent shrink-0"
+                title="লগআউট"
+              >
+                <LogOut className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
           <div className="text-center space-y-1">
             <p className="text-sm font-serif text-sidebar-primary">
               ٱلسَّلَامُ عَلَيْكُمْ
