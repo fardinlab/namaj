@@ -98,13 +98,19 @@ export default function Settings() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
-      <h1 className="text-2xl font-bold">সেটিংস</h1>
+      {/* Header */}
+      <div className="text-center">
+        <h1 className="text-2xl font-serif font-bold mb-2">সেটিংস</h1>
+        <p className="text-muted-foreground text-sm">ক্যাম্পেইন কনফিগারেশন</p>
+      </div>
 
       {/* Campaign Date Settings */}
-      <Card>
+      <Card className="border-0 shadow-soft">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <SettingsIcon className="h-5 w-5" />
+          <CardTitle className="flex items-center gap-2 font-serif">
+            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+              <SettingsIcon className="h-4 w-4 text-primary" />
+            </div>
             ক্যাম্পেইন তারিখ
           </CardTitle>
         </CardHeader>
@@ -122,7 +128,7 @@ export default function Settings() {
                   <Button
                     variant="outline"
                     className={cn(
-                      "w-full justify-start text-left font-normal",
+                      "w-full justify-start text-left font-normal rounded-xl",
                       !startDate && "text-muted-foreground"
                     )}
                   >
@@ -130,7 +136,7 @@ export default function Settings() {
                     {startDate ? formatBanglaDate(startDate) : 'তারিখ নির্বাচন করুন'}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
+                <PopoverContent className="w-auto p-0 rounded-xl" align="start">
                   <Calendar
                     mode="single"
                     selected={startDate}
@@ -155,7 +161,7 @@ export default function Settings() {
                   <Button
                     variant="outline"
                     className={cn(
-                      "w-full justify-start text-left font-normal",
+                      "w-full justify-start text-left font-normal rounded-xl",
                       !endDate && "text-muted-foreground"
                     )}
                   >
@@ -163,7 +169,7 @@ export default function Settings() {
                     {endDate ? formatBanglaDate(endDate) : 'তারিখ নির্বাচন করুন'}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
+                <PopoverContent className="w-auto p-0 rounded-xl" align="start">
                   <Calendar
                     mode="single"
                     selected={endDate}
@@ -182,22 +188,25 @@ export default function Settings() {
             </div>
           </div>
 
-          <div className="bg-muted rounded-lg p-3">
+          <div className="bg-muted/50 rounded-xl p-4">
             <p className="text-sm">
-              মোট দিন: <span className="font-semibold">{toBanglaNumber(totalDays)} দিন</span>
+              মোট দিন: <span className="font-semibold text-primary">{toBanglaNumber(totalDays)} দিন</span>
             </p>
           </div>
 
-          <Button onClick={handleSaveDates} className="w-full sm:w-auto">
+          <Button onClick={handleSaveDates} className="w-full sm:w-auto rounded-xl">
             তারিখ সংরক্ষণ করুন
           </Button>
         </CardContent>
       </Card>
 
-      <Card>
+      {/* Export Card */}
+      <Card className="border-0 shadow-soft">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Download className="h-5 w-5" />
+          <CardTitle className="flex items-center gap-2 font-serif">
+            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Download className="h-4 w-4 text-primary" />
+            </div>
             ডাটা এক্সপোর্ট
           </CardTitle>
         </CardHeader>
@@ -205,17 +214,21 @@ export default function Settings() {
           <p className="text-sm text-muted-foreground">
             সমস্ত সদস্য এবং উপস্থিতি তথ্য JSON ফাইল হিসেবে ডাউনলোড করুন।
           </p>
-          <Button onClick={handleExportData} className="gap-2">
+          <Button onClick={handleExportData} variant="outline" className="gap-2 rounded-xl">
             <Download className="h-4 w-4" />
             ব্যাকআপ ডাউনলোড করুন
           </Button>
         </CardContent>
       </Card>
 
-      <Card className="border-destructive/50">
+      {/* Danger Zone */}
+      <Card className="border-0 shadow-soft overflow-hidden">
+        <div className="h-1 bg-destructive/50" />
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-destructive">
-            <AlertTriangle className="h-5 w-5" />
+          <CardTitle className="flex items-center gap-2 text-destructive font-serif">
+            <div className="w-8 h-8 rounded-lg bg-destructive/10 flex items-center justify-center">
+              <AlertTriangle className="h-4 w-4 text-destructive" />
+            </div>
             বিপজ্জনক জোন
           </CardTitle>
         </CardHeader>
@@ -224,17 +237,18 @@ export default function Settings() {
             সমস্ত ডাটা মুছে ফেলুন। এই কাজটি পূর্বাবস্থায় ফেরানো যাবে না।
           </p>
           
-          <Button variant="destructive" className="gap-2" onClick={openDeleteDialog}>
+          <Button variant="destructive" className="gap-2 rounded-xl" onClick={openDeleteDialog}>
             <Trash2 className="h-4 w-4" />
             সমস্ত ডাটা মুছে ফেলুন
           </Button>
         </CardContent>
       </Card>
 
-      <Card>
+      {/* Version info */}
+      <Card className="border-0 shadow-soft">
         <CardContent className="py-6 text-center text-muted-foreground">
-          <p className="text-sm">
-            নামাজ উপস্থিতি ক্যাম্পেইন অ্যাপ
+          <p className="text-sm font-serif">
+            নামাজ উপস্থিতি ক্যাম্পেইন
           </p>
           <p className="text-xs mt-1">
             সংস্করণ ১.০.০
@@ -242,11 +256,11 @@ export default function Settings() {
         </CardContent>
       </Card>
 
-      {/* Delete All Data Dialog with Secret Code */}
+      {/* Delete All Data Dialog */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <DialogContent>
+        <DialogContent className="rounded-2xl">
           <DialogHeader>
-            <DialogTitle>সমস্ত ডাটা মুছে ফেলুন</DialogTitle>
+            <DialogTitle className="font-serif">সমস্ত ডাটা মুছে ফেলুন</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 pt-4">
             <p className="text-sm text-muted-foreground">
@@ -264,7 +278,7 @@ export default function Settings() {
                   setDeleteCode(e.target.value);
                   setDeleteError(false);
                 }}
-                className={deleteError ? 'border-destructive' : ''}
+                className={`rounded-xl ${deleteError ? 'border-destructive' : ''}`}
               />
               {deleteError && (
                 <p className="text-sm text-destructive">ভুল কোড! সঠিক কোড দিন।</p>
@@ -274,14 +288,14 @@ export default function Settings() {
               <Button 
                 variant="outline"
                 onClick={() => setDeleteDialogOpen(false)} 
-                className="flex-1"
+                className="flex-1 rounded-xl"
               >
                 বাতিল
               </Button>
               <Button 
                 variant="destructive"
                 onClick={handleClearData} 
-                className="flex-1"
+                className="flex-1 rounded-xl"
               >
                 মুছে ফেলুন
               </Button>

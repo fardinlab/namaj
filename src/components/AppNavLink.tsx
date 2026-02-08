@@ -15,16 +15,16 @@ export function AppNavLink({ to, icon: Icon, children, collapsed }: AppNavLinkPr
       to={to}
       className={({ isActive }) =>
         cn(
-          'flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200',
-          'hover:bg-sidebar-accent',
+          'flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200',
+          'hover:bg-sidebar-accent/80',
           isActive
-            ? 'bg-sidebar-accent text-sidebar-primary font-medium'
-            : 'text-sidebar-foreground/80'
+            ? 'bg-sidebar-accent text-sidebar-primary font-medium shadow-inner-soft'
+            : 'text-sidebar-foreground/70 hover:text-sidebar-foreground'
         )
       }
     >
       <Icon className="h-5 w-5 shrink-0" />
-      {!collapsed && <span className="text-base">{children}</span>}
+      {!collapsed && <span className="text-sm">{children}</span>}
     </RouterNavLink>
   );
 }

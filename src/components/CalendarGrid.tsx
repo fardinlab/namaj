@@ -9,6 +9,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Check } from 'lucide-react';
+import { Card } from '@/components/ui/card';
 
 interface CalendarGridProps {
   attendance: AttendanceRecord[];
@@ -16,14 +17,6 @@ interface CalendarGridProps {
   config: CampaignConfig;
   onTogglePrayer?: (memberId: string, date: string, prayer: PrayerName) => void;
 }
-
-const prayerIcons: Record<PrayerName, string> = {
-  fajr: '🌅',
-  zuhr: '☀️',
-  asr: '🌤️',
-  maghrib: '🌇',
-  isha: '🌙',
-};
 
 export function CalendarGrid({ attendance, memberId, config, onTogglePrayer }: CalendarGridProps) {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -69,13 +62,13 @@ export function CalendarGrid({ attendance, memberId, config, onTogglePrayer }: C
 
   return (
     <>
-      <div className="bg-card border border-border rounded-xl p-4">
-        <h3 className="text-lg font-semibold mb-2">{toBanglaNumber(totalDays)} দিনের ক্যালেন্ডার</h3>
+      <Card className="border-0 shadow-soft p-5">
+        <h3 className="text-lg font-serif font-semibold mb-2">{toBanglaNumber(totalDays)} দিনের ক্যালেন্ডার</h3>
         <p className="text-xs text-muted-foreground mb-4">
           যেকোনো তারিখে ক্লিক করে নামাজ এডিট করুন
         </p>
         
-        <div className="grid grid-cols-7 gap-1 sm:gap-2">
+        <div className="grid grid-cols-7 gap-1.5 sm:gap-2">
           {/* Weekday headers */}
           {['শনি', 'রবি', 'সোম', 'মঙ্গল', 'বুধ', 'বৃহ', 'শুক্র'].map(day => (
             <div key={day} className="text-xs text-center text-muted-foreground font-medium py-1">
@@ -101,13 +94,13 @@ export function CalendarGrid({ attendance, memberId, config, onTogglePrayer }: C
                 disabled={!isClickable}
                 title={formatShortBanglaDate(date)}
                 className={cn(
-                  'aspect-square flex items-center justify-center rounded-md text-xs sm:text-sm font-medium transition-all',
+                  'aspect-square flex items-center justify-center rounded-lg text-xs sm:text-sm font-medium transition-all',
                   status === 'perfect' && 'bg-primary text-primary-foreground',
-                  status === 'partial' && 'bg-amber-500/30 text-amber-700',
-                  status === 'missed' && 'bg-destructive/20 text-destructive',
+                  status === 'partial' && 'bg-secondary/30 text-secondary-foreground',
+                  status === 'missed' && 'bg-destructive/15 text-destructive',
                   status === 'future' && 'bg-muted text-muted-foreground',
-                  isTodayDate && 'ring-2 ring-primary ring-offset-2',
-                  isClickable && 'cursor-pointer hover:scale-110 hover:shadow-md active:scale-95',
+                  isTodayDate && 'ring-2 ring-primary ring-offset-2 ring-offset-card',
+                  isClickable && 'cursor-pointer hover:scale-110 hover:shadow-soft active:scale-95',
                   !isClickable && 'cursor-default'
                 )}
               >
@@ -118,31 +111,31 @@ export function CalendarGrid({ attendance, memberId, config, onTogglePrayer }: C
         </div>
         
         {/* Legend */}
-        <div className="flex flex-wrap gap-4 mt-4 text-sm">
+        <div className="flex flex-wrap gap-4 mt-5 text-xs">
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded bg-primary" />
-            <span>সম্পূর্ণ (৫/৫)</span>
+            <div className="w-4 h-4 rounded-md bg-primary" />
+            <span className="text-muted-foreground">সম্পূর্ণ (৫/৫)</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded bg-amber-500/30" />
-            <span>আংশিক</span>
+            <div className="w-4 h-4 rounded-md bg-secondary/30" />
+            <span className="text-muted-foreground">আংশিক</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded bg-destructive/20" />
-            <span>বাদ পড়েছে</span>
+            <div className="w-4 h-4 rounded-md bg-destructive/15" />
+            <span className="text-muted-foreground">বাদ পড়েছে</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded bg-muted" />
-            <span>আগামী</span>
+            <div className="w-4 h-4 rounded-md bg-muted" />
+            <span className="text-muted-foreground">আগামী</span>
           </div>
         </div>
-      </div>
+      </Card>
 
       {/* Edit Prayer Dialog */}
       <Dialog open={!!selectedDate} onOpenChange={(open) => !open && setSelectedDate(null)}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="max-w-sm rounded-2xl">
           <DialogHeader>
-            <DialogTitle className="text-center">
+            <DialogTitle className="text-center font-serif">
               {selectedDate && formatBanglaDate(selectedDate)}
             </DialogTitle>
           </DialogHeader>
@@ -150,7 +143,7 @@ export function CalendarGrid({ attendance, memberId, config, onTogglePrayer }: C
           <div className="space-y-4">
             {/* Progress */}
             <div className="flex items-center justify-center gap-2">
-              <div className="flex gap-1">
+              <div className="flex gap-1.5">
                 {[...Array(5)].map((_, i) => (
                   <div 
                     key={i} 
@@ -178,16 +171,15 @@ export function CalendarGrid({ attendance, memberId, config, onTogglePrayer }: C
                     }}
                     className={cn(
                       'relative flex flex-col items-center py-3 px-1 rounded-xl transition-all duration-200',
-                      'focus:outline-none focus:ring-2 focus:ring-primary/50',
+                      'focus:outline-none focus:ring-2 focus:ring-primary/40',
                       isCompleted
-                        ? 'bg-primary text-primary-foreground shadow-md'
-                        : 'bg-muted/50 text-muted-foreground hover:bg-muted active:scale-95'
+                        ? 'bg-primary text-primary-foreground shadow-soft'
+                        : 'bg-muted text-muted-foreground hover:bg-muted/80 active:scale-95'
                     )}
                   >
-                    <span className="text-xl mb-1">{prayerIcons[prayer]}</span>
                     <span className="text-[10px] font-medium leading-tight">{PRAYER_NAMES[prayer]}</span>
                     {isCompleted && (
-                      <Check className="absolute -top-1 -right-1 h-4 w-4 bg-primary text-primary-foreground rounded-full p-0.5" />
+                      <Check className="absolute -top-1 -right-1 h-4 w-4 bg-secondary text-secondary-foreground rounded-full p-0.5" />
                     )}
                   </button>
                 );

@@ -1,94 +1,111 @@
+@import url('https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400;1,700&family=Noto+Sans+Bengali:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* নামাজ উপস্থিতি ক্যাম্পেইন - Mosque-appropriate Design System */
+/* নামাজ উপস্থিতি ক্যাম্পেইন - Calm Islamic Spiritual Design System */
+/* Inspired by Makkah, Madinah, Kaaba, and mosque architecture */
 
 @layer base {
   :root {
-    --background: 40 30% 97%;
-    --foreground: 150 30% 15%;
+    /* Soft cream/off-white backgrounds */
+    --background: 40 33% 96%;
+    --foreground: 200 15% 20%;
 
-    --card: 40 25% 95%;
-    --card-foreground: 150 30% 15%;
+    /* Warm cream cards */
+    --card: 40 30% 98%;
+    --card-foreground: 200 15% 20%;
 
-    --popover: 40 25% 95%;
-    --popover-foreground: 150 30% 15%;
+    --popover: 40 30% 98%;
+    --popover-foreground: 200 15% 20%;
 
-    --primary: 158 45% 30%;
-    --primary-foreground: 40 30% 97%;
+    /* Soft Islamic green - inspired by mosque domes */
+    --primary: 155 40% 35%;
+    --primary-foreground: 40 30% 98%;
 
-    --secondary: 45 60% 55%;
-    --secondary-foreground: 150 30% 15%;
+    /* Subtle gold accent - inspired by Kaaba embroidery */
+    --secondary: 45 45% 50%;
+    --secondary-foreground: 200 15% 15%;
 
-    --muted: 40 20% 90%;
-    --muted-foreground: 150 15% 40%;
+    /* Muted warm tones */
+    --muted: 40 20% 92%;
+    --muted-foreground: 200 10% 45%;
 
-    --accent: 45 70% 60%;
-    --accent-foreground: 150 30% 15%;
+    /* Very subtle gold accent */
+    --accent: 42 50% 55%;
+    --accent-foreground: 200 15% 15%;
 
-    --destructive: 0 65% 50%;
-    --destructive-foreground: 40 30% 97%;
+    --destructive: 0 55% 50%;
+    --destructive-foreground: 40 30% 98%;
 
-    --success: 158 50% 40%;
-    --success-foreground: 40 30% 97%;
+    /* Soft green for success states */
+    --success: 155 45% 40%;
+    --success-foreground: 40 30% 98%;
 
-    --border: 150 15% 80%;
-    --input: 150 15% 80%;
-    --ring: 158 45% 30%;
+    /* Soft borders */
+    --border: 40 15% 85%;
+    --input: 40 15% 85%;
+    --ring: 155 40% 35%;
 
-    --radius: 0.75rem;
+    /* Generous rounded corners for calm feel */
+    --radius: 1rem;
 
-    --sidebar-background: 158 40% 25%;
-    --sidebar-foreground: 40 30% 97%;
-    --sidebar-primary: 45 70% 60%;
-    --sidebar-primary-foreground: 150 30% 15%;
-    --sidebar-accent: 158 35% 35%;
-    --sidebar-accent-foreground: 40 30% 97%;
-    --sidebar-border: 158 30% 30%;
-    --sidebar-ring: 45 70% 60%;
+    /* Sidebar - Deep calm green inspired by Islamic architecture */
+    --sidebar-background: 155 35% 25%;
+    --sidebar-foreground: 40 30% 95%;
+    --sidebar-primary: 42 50% 60%;
+    --sidebar-primary-foreground: 200 15% 15%;
+    --sidebar-accent: 155 30% 32%;
+    --sidebar-accent-foreground: 40 30% 95%;
+    --sidebar-border: 155 25% 30%;
+    --sidebar-ring: 42 50% 60%;
   }
 
   .dark {
-    --background: 150 25% 10%;
-    --foreground: 40 30% 95%;
+    /* Deep night sky */
+    --background: 200 20% 10%;
+    --foreground: 40 25% 92%;
 
-    --card: 150 20% 15%;
-    --card-foreground: 40 30% 95%;
+    /* Dark warm cards */
+    --card: 200 18% 14%;
+    --card-foreground: 40 25% 92%;
 
-    --popover: 150 20% 15%;
-    --popover-foreground: 40 30% 95%;
+    --popover: 200 18% 14%;
+    --popover-foreground: 40 25% 92%;
 
-    --primary: 158 45% 45%;
-    --primary-foreground: 150 30% 10%;
+    /* Softer green for dark mode */
+    --primary: 155 40% 45%;
+    --primary-foreground: 200 20% 10%;
 
-    --secondary: 45 50% 45%;
-    --secondary-foreground: 40 30% 95%;
+    /* Muted gold */
+    --secondary: 42 40% 45%;
+    --secondary-foreground: 40 25% 92%;
 
-    --muted: 150 15% 20%;
-    --muted-foreground: 40 20% 65%;
+    --muted: 200 15% 18%;
+    --muted-foreground: 40 20% 60%;
 
-    --accent: 45 60% 50%;
-    --accent-foreground: 150 30% 10%;
+    --accent: 42 45% 50%;
+    --accent-foreground: 200 20% 10%;
 
-    --destructive: 0 55% 45%;
-    --destructive-foreground: 40 30% 95%;
+    --destructive: 0 50% 45%;
+    --destructive-foreground: 40 25% 92%;
 
-    --success: 158 45% 50%;
-    --success-foreground: 150 30% 10%;
+    --success: 155 40% 50%;
+    --success-foreground: 200 20% 10%;
 
-    --border: 150 15% 25%;
-    --input: 150 15% 25%;
-    --ring: 158 45% 45%;
+    --border: 200 15% 22%;
+    --input: 200 15% 22%;
+    --ring: 155 40% 45%;
 
-    --sidebar-background: 150 25% 8%;
-    --sidebar-foreground: 40 30% 95%;
-    --sidebar-primary: 45 60% 50%;
-    --sidebar-primary-foreground: 150 30% 10%;
-    --sidebar-accent: 150 20% 18%;
-    --sidebar-accent-foreground: 40 30% 95%;
-    --sidebar-border: 150 15% 20%;
-    --sidebar-ring: 45 60% 50%;
+    --sidebar-background: 200 20% 8%;
+    --sidebar-foreground: 40 25% 92%;
+    --sidebar-primary: 42 45% 55%;
+    --sidebar-primary-foreground: 200 20% 10%;
+    --sidebar-accent: 200 18% 15%;
+    --sidebar-accent-foreground: 40 25% 92%;
+    --sidebar-border: 200 15% 18%;
+    --sidebar-ring: 42 45% 55%;
   }
 }
 
@@ -97,9 +114,19 @@
     @apply border-border;
   }
 
+  html {
+    scroll-behavior: smooth;
+  }
+
   body {
-    @apply bg-background text-foreground;
-    font-family: 'Noto Sans Bengali', 'Hind Siliguri', sans-serif;
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Noto Sans Bengali', 'Amiri', sans-serif;
+  }
+
+  /* Arabic-inspired headings */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Amiri', 'Noto Sans Bengali', serif;
+    @apply tracking-tight;
   }
 }
 
@@ -107,4 +134,84 @@
   .text-balance {
     text-wrap: balance;
   }
+}
+
+/* Islamic geometric pattern overlay (very subtle) */
+.islamic-pattern {
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 0L60 30L30 60L0 30L30 0z' fill='none' stroke='%23000' stroke-opacity='0.02' stroke-width='0.5'/%3E%3C/svg%3E");
+}
+
+/* Soft shadow utilities */
+.shadow-soft {
+  box-shadow: 0 4px 20px -4px hsl(var(--foreground) / 0.08);
+}
+
+.shadow-soft-lg {
+  box-shadow: 0 8px 32px -8px hsl(var(--foreground) / 0.1);
+}
+
+/* Gradient utilities for Islamic feel */
+.gradient-gold {
+  background: linear-gradient(135deg, hsl(42 50% 55%) 0%, hsl(38 45% 50%) 100%);
+}
+
+.gradient-green {
+  background: linear-gradient(135deg, hsl(155 40% 35%) 0%, hsl(160 35% 30%) 100%);
+}
+
+/* Mosque silhouette background (very subtle) */
+.mosque-bg {
+  position: relative;
+}
+
+.mosque-bg::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 100'%3E%3Cpath d='M0 100 L0 60 Q10 50 20 60 L20 40 Q30 30 40 40 L40 60 Q50 50 60 60 L60 80 L80 80 L80 50 Q90 30 100 50 L100 50 Q110 30 120 50 L120 80 L140 80 L140 60 Q150 50 160 60 L160 40 Q170 30 180 40 L180 60 Q190 50 200 60 L200 100 Z' fill='%23000' fill-opacity='0.015'/%3E%3C/svg%3E");
+  background-repeat: repeat-x;
+  background-position: bottom;
+  background-size: 400px 100px;
+  pointer-events: none;
+}
+
+/* Crescent moon decoration */
+.crescent-decoration::after {
+  content: '☪';
+  position: absolute;
+  top: -0.5rem;
+  right: -0.5rem;
+  font-size: 1.5rem;
+  color: hsl(var(--secondary));
+  opacity: 0.6;
+}
+
+/* Fade-in animation */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.4s ease-out;
+}
+
+/* Gentle pulse for active states */
+@keyframes gentle-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+.animate-gentle-pulse {
+  animation: gentle-pulse 2s ease-in-out infinite;
 }
