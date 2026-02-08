@@ -69,7 +69,7 @@ const handler = async (req: Request): Promise<Response> => {
     const resend = new Resend(resendApiKey);
     
     const emailResponse = await resend.emails.send({
-      from: "নামাজ ক্যাম্পেইন <noreply@fucklove.store>",
+      from: "নামাজ ক্যাম্পেইন <noreply@fardin.bro.bd>",
       to: [email],
       subject: "আপনার ভেরিফিকেশন কোড - নামাজ ক্যাম্পেইন",
       html: `
