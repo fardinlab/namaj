@@ -3,10 +3,10 @@ import { useCampaignData } from '@/hooks/useCampaignData';
 import { formatBanglaDate, toBanglaNumber } from '@/lib/bangla-utils';
 import { PrayerName, PRAYER_NAMES } from '@/lib/types';
 import { Card, CardContent } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Check, Star, Calendar, Flame, Trophy, ChevronDown } from 'lucide-react';
+import { Check, Star, Calendar, Flame, Trophy } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { CalendarGrid } from '@/components/CalendarGrid';
+import { MemberSearch } from '@/components/MemberSearch';
 
 const prayerIcons: Record<PrayerName, string> = {
   fajr: '🌅',
@@ -56,21 +56,11 @@ export default function Dashboard() {
         <h1 className="text-xl font-bold text-foreground">নামাজ ট্র্যাকার</h1>
       </div>
 
-      {/* Member Selector - Compact */}
-      <div className="relative">
-        <Select value={selectedMemberId} onValueChange={setSelectedMemberId}>
-          <SelectTrigger className="w-full h-12 text-base bg-card border-2 border-border focus:border-primary">
-            <SelectValue placeholder="সদস্য নির্বাচন করুন" />
-          </SelectTrigger>
-          <SelectContent>
-            {members.map(member => (
-              <SelectItem key={member.id} value={member.id} className="text-base py-3">
-                {member.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      {/* Member Search with Camera */}
+      <MemberSearch 
+        members={members} 
+        onSelectMember={setSelectedMemberId} 
+      />
 
       {selectedMember && (
         <>
