@@ -401,15 +401,39 @@ export function useCloudCampaignData() {
   };
 
   const updateMemberPhoto = async (memberId: string, photoUrl: string | null) => {
+    // Update local state first (optimistic update)
+    let updatedMember: CloudMember | undefined;
+    
+    setMembers(prev => {
+      const updated = prev.map(m => {
+        if (m.id === memberId) {
+          updatedMember = { ...m, photo_url: photoUrl };
+          return updatedMember;
+        }
+        return m;
+      });
+      return updated;
+    });
+
+    // Update IndexedDB cache immediately with the updated member
+    if (dbReady && updatedMember) {
+      await put('members', updatedMember);
+      console.log('Photo URL saved to IndexedDB:', updatedMember.photo_url);
+    }
+
     if (isOnline) {
       const { error } = await supabase
         .from('members')
         .update({ photo_url: photoUrl })
         .eq('id', memberId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error updating photo in cloud:', error);
+        throw error;
+      }
+      console.log('Photo URL saved to Cloud:', photoUrl);
     } else {
-      // Queue for sync
+      // Queue for sync when offline
       if (dbReady) {
         await addToSyncQueue({
           store: 'members',
@@ -422,18 +446,6 @@ export function useCloudCampaignData() {
         title: 'Offline এ সংরক্ষিত',
         description: 'Online হলে sync হবে',
       });
-    }
-
-    // Update local state and cache
-    setMembers(prev => prev.map(m => 
-      m.id === memberId ? { ...m, photo_url: photoUrl } : m
-    ));
-
-    if (dbReady) {
-      const member = members.find(m => m.id === memberId);
-      if (member) {
-        await put('members', { ...member, photo_url: photoUrl });
-      }
     }
   };
 
