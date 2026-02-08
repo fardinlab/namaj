@@ -32,23 +32,47 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    // Build prompt for face comparison
-    const memberDescriptions = memberPhotos.map((m: { id: string; name: string; photo: string }, i: number) => 
-      `Member ${i + 1}: ID="${m.id}", Name="${m.name}"`
+    // Build detailed prompt for accurate face comparison
+    const memberList = memberPhotos.map((m: { id: string; name: string }, i: number) => 
+      `Photo ${i + 2}: Member ID="${m.id}", Name="${m.name}"`
     ).join("\n");
 
-    const imageContent = [
+    const systemPrompt = `You are an expert face recognition system. Your task is to compare the FIRST image (Photo 1 - captured from camera) with the subsequent member photos and determine if any member matches.
+
+CRITICAL MATCHING CRITERIA - Only match if ALL of these are similar:
+1. Face shape and structure (oval, round, square, etc.)
+2. Eye shape, size, and spacing
+3. Nose shape and size
+4. Mouth shape and lip thickness
+5. Eyebrow shape and thickness
+6. Jawline and chin structure
+7. Forehead size and shape
+8. Overall facial proportions
+
+STRICT RULES:
+- Only report a match if you are 90%+ confident
+- Different lighting or angles are acceptable, but core facial features must match
+- Do NOT match based on similar clothing, background, or accessories
+- Do NOT match based on similar hair style or color alone
+- If the face in Photo 1 is unclear, blurry, or partially hidden, respond with NO_MATCH
+- If multiple members look similar, respond with NO_MATCH (avoid false positives)
+- When in doubt, always respond with NO_MATCH
+
+RESPONSE FORMAT:
+- If confident match found: MATCH:member_id_here
+- If no confident match: NO_MATCH
+
+Do not include any explanation, just the response format above.`;
+
+    const userContent = [
       {
         type: "text",
-        text: `You are a face recognition assistant. Compare the first image (captured from camera) with the following member photos and identify which member matches the captured face.
+        text: `Photo 1 (Camera capture - the person to identify):
+Compare this person's face with the following member photos:
 
-Members:
-${memberDescriptions}
+${memberList}
 
-IMPORTANT: 
-- If you find a clear match, respond with ONLY the member ID in this exact format: MATCH:member_id_here
-- If no match is found or you're not confident, respond with: NO_MATCH
-- Do not include any other text or explanation.`
+Analyze facial features carefully and respond with the matching member ID or NO_MATCH.`
       },
       {
         type: "image_url",
@@ -60,6 +84,7 @@ IMPORTANT:
       }))
     ];
 
+    // Use the more powerful model for better accuracy
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -67,13 +92,18 @@ IMPORTANT:
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "google/gemini-2.5-pro", // Using Pro for better accuracy
         messages: [
           {
+            role: "system",
+            content: systemPrompt
+          },
+          {
             role: "user",
-            content: imageContent
+            content: userContent
           }
         ],
+        temperature: 0.1, // Low temperature for consistent results
       }),
     });
 
@@ -99,23 +129,31 @@ IMPORTANT:
     }
 
     const data = await response.json();
-    const aiResponse = data.choices?.[0]?.message?.content || "";
+    const aiResponse = data.choices?.[0]?.message?.content?.trim() || "";
     
     console.log("AI Response:", aiResponse);
 
-    // Parse the response
-    if (aiResponse.startsWith("MATCH:")) {
-      const matchedId = aiResponse.replace("MATCH:", "").trim();
-      return new Response(
-        JSON.stringify({ matched: true, memberId: matchedId }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    } else {
-      return new Response(
-        JSON.stringify({ matched: false, memberId: null }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    // Parse the response - be strict about format
+    const matchPattern = /^MATCH:([a-f0-9-]+)$/i;
+    const match = aiResponse.match(matchPattern);
+    
+    if (match && match[1]) {
+      const matchedId = match[1].trim();
+      // Verify the ID exists in our member list
+      const validMember = memberPhotos.find((m: { id: string }) => m.id === matchedId);
+      if (validMember) {
+        return new Response(
+          JSON.stringify({ matched: true, memberId: matchedId }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
     }
+    
+    // No match or invalid response
+    return new Response(
+      JSON.stringify({ matched: false, memberId: null }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
 
   } catch (error) {
     console.error("Face recognition error:", error);
