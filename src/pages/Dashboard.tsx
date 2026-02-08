@@ -1,12 +1,14 @@
 import { useState } from 'react';
-import { useCampaignData } from '@/hooks/useCampaignData';
+import { useCloudCampaignData } from '@/hooks/useCloudCampaignData';
 import { formatBanglaDate, toBanglaNumber } from '@/lib/bangla-utils';
 import { PrayerName, PRAYER_NAMES } from '@/lib/types';
 import { Card, CardContent } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Check, Star, Calendar, Flame, Trophy } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { CalendarGrid } from '@/components/CalendarGrid';
 import { MemberSearch } from '@/components/MemberSearch';
+import { toast } from 'sonner';
 
 // Prayer icons as soft, Islamic-inspired designs
 const prayerConfig: Record<PrayerName, { label: string; time: string }> = {
@@ -18,7 +20,16 @@ const prayerConfig: Record<PrayerName, { label: string; time: string }> = {
 };
 
 export default function Dashboard() {
-  const { members, attendance, getAttendanceForDate, togglePrayer, getMemberStats, config } = useCampaignData();
+  const { 
+    members, 
+    attendance, 
+    getAttendanceForDate, 
+    togglePrayer, 
+    getMemberStats, 
+    config,
+    loading 
+  } = useCloudCampaignData();
+  
   const [selectedMemberId, setSelectedMemberId] = useState<string>('');
 
   const today = new Date();
@@ -30,6 +41,29 @@ export default function Dashboard() {
 
   const prayers: PrayerName[] = ['fajr', 'zuhr', 'asr', 'maghrib', 'isha'];
   const completedToday = todayAttendance ? Object.values(todayAttendance.prayers).filter(Boolean).length : 0;
+
+  const handleTogglePrayer = async (memberId: string, date: string, prayer: PrayerName) => {
+    try {
+      await togglePrayer(memberId, date, prayer);
+    } catch (error) {
+      console.error('Error toggling prayer:', error);
+      toast.error('নামাজ আপডেট করতে সমস্যা হয়েছে');
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="max-w-lg mx-auto space-y-6 pb-8">
+        <div className="text-center pt-4 pb-2">
+          <Skeleton className="h-4 w-32 mx-auto mb-2" />
+          <Skeleton className="h-8 w-48 mx-auto mb-2" />
+          <Skeleton className="h-6 w-36 mx-auto" />
+        </div>
+        <Skeleton className="h-12 w-full" />
+        <Skeleton className="h-64 w-full" />
+      </div>
+    );
+  }
 
   if (members.length === 0) {
     return (
@@ -120,7 +154,7 @@ export default function Dashboard() {
                   return (
                     <button
                       key={prayer}
-                      onClick={() => togglePrayer(selectedMemberId, todayStr, prayer)}
+                      onClick={() => handleTogglePrayer(selectedMemberId, todayStr, prayer)}
                       className={cn(
                         'relative flex flex-col items-center py-3 px-2 rounded-2xl transition-all duration-300',
                         'focus:outline-none focus:ring-2 focus:ring-primary/40 active:scale-95',
@@ -213,7 +247,7 @@ export default function Dashboard() {
             attendance={attendance} 
             memberId={selectedMemberId} 
             config={config} 
-            onTogglePrayer={togglePrayer}
+            onTogglePrayer={handleTogglePrayer}
           />
         </div>
       )}

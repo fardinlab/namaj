@@ -14,6 +14,80 @@ export type Database = {
   }
   public: {
     Tables: {
+      attendance: {
+        Row: {
+          asr: boolean
+          date: string
+          fajr: boolean
+          id: string
+          isha: boolean
+          maghrib: boolean
+          member_id: string
+          updated_at: string
+          updated_by: string | null
+          zuhr: boolean
+        }
+        Insert: {
+          asr?: boolean
+          date: string
+          fajr?: boolean
+          id?: string
+          isha?: boolean
+          maghrib?: boolean
+          member_id: string
+          updated_at?: string
+          updated_by?: string | null
+          zuhr?: boolean
+        }
+        Update: {
+          asr?: boolean
+          date?: string
+          fajr?: boolean
+          id?: string
+          isha?: boolean
+          maghrib?: boolean
+          member_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          zuhr?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campaign_config: {
+        Row: {
+          end_date: string
+          id: string
+          start_date: string
+          streak_target: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          end_date?: string
+          id?: string
+          start_date?: string
+          streak_target?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          end_date?: string
+          id?: string
+          start_date?: string
+          streak_target?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       developer_bio: {
         Row: {
           bio: string
@@ -83,6 +157,33 @@ export type Database = {
           expires_at?: string
           id?: string
           verified?: boolean | null
+        }
+        Relationships: []
+      }
+      members: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+          phone: string | null
+          photo_url: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name: string
+          phone?: string | null
+          photo_url?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+          phone?: string | null
+          photo_url?: string | null
         }
         Relationships: []
       }

@@ -1,6 +1,7 @@
-import { useCampaignData } from '@/hooks/useCampaignData';
+import { useCloudCampaignData } from '@/hooks/useCloudCampaignData';
 import { toBanglaNumber } from '@/lib/bangla-utils';
 import { Card, CardContent } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Star, Calendar, Flame } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -35,7 +36,24 @@ const RankBadge = ({ rank }: { rank: number }) => {
 };
 
 export default function Leaderboard() {
-  const { getLeaderboard } = useCampaignData();
+  const { getLeaderboard, loading } = useCloudCampaignData();
+
+  if (loading) {
+    return (
+      <div className="max-w-2xl mx-auto space-y-6">
+        <div className="text-center mb-8">
+          <Skeleton className="h-4 w-20 mx-auto mb-2" />
+          <Skeleton className="h-8 w-48 mx-auto mb-2" />
+          <Skeleton className="h-4 w-36 mx-auto" />
+        </div>
+        <div className="space-y-3">
+          {[1, 2, 3, 4, 5].map(i => (
+            <Skeleton key={i} className="h-20 w-full" />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   if (getLeaderboard.length === 0) {
     return (

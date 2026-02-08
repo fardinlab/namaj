@@ -1,12 +1,13 @@
 import { useState } from 'react';
-import { useCampaignData } from '@/hooks/useCampaignData';
+import { useCloudCampaignData } from '@/hooks/useCloudCampaignData';
 import { toBanglaNumber } from '@/lib/bangla-utils';
 import { PRAYER_NAMES, PrayerName } from '@/lib/types';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { MemberPhotoUpload } from '@/components/MemberPhotoUpload';
+import { CloudMemberPhotoUpload } from '@/components/CloudMemberPhotoUpload';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Dialog,
   DialogContent,
@@ -14,10 +15,24 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Plus, Search, Star, Calendar, Flame, Trash2, Phone, UserPlus } from 'lucide-react';
+import { Plus, Search, Star, Calendar, Flame, Trash2, Phone, UserPlus, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function Members() {
-  const { members, attendance, addMember, removeMember, updateMemberPhoto, updateMemberPhone, getMemberStats } = useCampaignData();
+  const { isAdmin } = useAuth();
+  const { 
+    members, 
+    cloudMembers,
+    attendance, 
+    addMember, 
+    removeMember, 
+    updateMemberPhoto, 
+    updateMemberPhone, 
+    getMemberStats,
+    loading 
+  } = useCloudCampaignData();
+  
   const [searchQuery, setSearchQuery] = useState('');
   const [newMemberName, setNewMemberName] = useState('');
   const [newMemberPhone, setNewMemberPhone] = useState('');
@@ -27,6 +42,7 @@ export default function Members() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState<string | null>(null);
   const [deleteCode, setDeleteCode] = useState('');
   const [deleteError, setDeleteError] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const todayStr = new Date().toISOString().split('T')[0];
   const prayers: PrayerName[] = ['fajr', 'zuhr', 'asr', 'maghrib', 'isha'];
@@ -41,20 +57,38 @@ export default function Members() {
     member.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleAddMember = () => {
-    if (newMemberName.trim()) {
-      addMember(newMemberName.trim(), newMemberPhone.trim() || undefined);
+  const handleAddMember = async () => {
+    if (!newMemberName.trim()) return;
+    
+    setIsSubmitting(true);
+    try {
+      await addMember(newMemberName.trim(), newMemberPhone.trim() || undefined);
       setNewMemberName('');
       setNewMemberPhone('');
       setDialogOpen(false);
+      toast.success('সদস্য যোগ করা হয়েছে');
+    } catch (error) {
+      console.error('Error adding member:', error);
+      toast.error('সদস্য যোগ করতে সমস্যা হয়েছে');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const handleAddPhone = (memberId: string) => {
-    if (editPhone.trim()) {
-      updateMemberPhone(memberId, editPhone.trim());
+  const handleAddPhone = async (memberId: string) => {
+    if (!editPhone.trim()) return;
+    
+    setIsSubmitting(true);
+    try {
+      await updateMemberPhone(memberId, editPhone.trim());
       setPhoneDialogOpen(null);
       setEditPhone('');
+      toast.success('ফোন নম্বর সংরক্ষিত হয়েছে');
+    } catch (error) {
+      console.error('Error updating phone:', error);
+      toast.error('ফোন নম্বর সংরক্ষণ করতে সমস্যা হয়েছে');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -63,14 +97,24 @@ export default function Members() {
     setPhoneDialogOpen(memberId);
   };
 
-  const handleDeleteMember = (memberId: string) => {
-    if (deleteCode === 'FARDIN') {
-      removeMember(memberId);
+  const handleDeleteMember = async (memberId: string) => {
+    if (deleteCode !== 'FARDIN') {
+      setDeleteError(true);
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await removeMember(memberId);
       setDeleteDialogOpen(null);
       setDeleteCode('');
       setDeleteError(false);
-    } else {
-      setDeleteError(true);
+      toast.success('সদস্য মুছে ফেলা হয়েছে');
+    } catch (error) {
+      console.error('Error deleting member:', error);
+      toast.error('সদস্য মুছতে সমস্যা হয়েছে। আপনার অ্যাডমিন অধিকার আছে কিনা নিশ্চিত করুন।');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -79,6 +123,35 @@ export default function Members() {
     setDeleteError(false);
     setDeleteDialogOpen(memberId);
   };
+
+  const handlePhotoChange = async (memberId: string, photoUrl: string | null) => {
+    try {
+      await updateMemberPhoto(memberId, photoUrl);
+    } catch (error) {
+      console.error('Error updating photo:', error);
+      toast.error('ছবি আপডেট করতে সমস্যা হয়েছে');
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="max-w-4xl mx-auto space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <Skeleton className="h-8 w-40 mb-2" />
+            <Skeleton className="h-4 w-24" />
+          </div>
+          <Skeleton className="h-10 w-32" />
+        </div>
+        <Skeleton className="h-12 w-full" />
+        <div className="grid gap-4">
+          {[1, 2, 3].map(i => (
+            <Skeleton key={i} className="h-32 w-full" />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -121,8 +194,19 @@ export default function Members() {
                   className="rounded-xl"
                 />
               </div>
-              <Button onClick={handleAddMember} className="w-full rounded-xl">
-                সদস্য যোগ করুন
+              <Button 
+                onClick={handleAddMember} 
+                className="w-full rounded-xl"
+                disabled={isSubmitting || !newMemberName.trim()}
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    যোগ করা হচ্ছে...
+                  </>
+                ) : (
+                  'সদস্য যোগ করুন'
+                )}
               </Button>
             </div>
           </DialogContent>
@@ -157,111 +241,114 @@ export default function Members() {
         </Card>
       ) : (
         <div className="grid gap-4">
-          {filteredMembers.map(member => {
+          {filteredMembers.map((member, index) => {
+            const cloudMember = cloudMembers[index];
             const stats = getMemberStats(member.id);
             const hasUpdatedToday = hasTodayData(member.id);
             const todayRecord = attendance.find(a => a.memberId === member.id && a.date === todayStr);
               
-              return (
-                <Card 
-                  key={member.id} 
-                  className={`shadow-soft border-0 overflow-hidden transition-all hover:shadow-soft-lg ${
-                    hasUpdatedToday 
-                      ? 'ring-2 ring-success/30' 
-                      : 'ring-2 ring-secondary/30'
-                  }`}
-                >
-                  {/* Top gradient indicator */}
-                  <div className={`h-1 ${hasUpdatedToday ? 'bg-success' : 'bg-secondary'}`} />
-                  
-                  <CardContent className="p-4">
-                    {/* Today's Prayer Status - Pill style */}
-                    <div className="flex gap-1.5 mb-4">
-                      {prayers.map(prayer => {
-                        const isCompleted = todayRecord?.prayers[prayer] ?? false;
-                        return (
-                          <div
-                            key={prayer}
-                            className={`flex-1 text-center py-1.5 px-1 rounded-lg text-xs font-medium transition-colors ${
-                              isCompleted 
-                                ? 'bg-primary text-primary-foreground' 
-                                : 'bg-muted text-muted-foreground'
-                            }`}
-                            title={isCompleted ? `${PRAYER_NAMES[prayer]} ✓` : `${PRAYER_NAMES[prayer]} - বাকি`}
-                          >
-                            {PRAYER_NAMES[prayer]}
-                          </div>
-                        );
-                      })}
-                    </div>
-
-                    <div className="flex items-start gap-4">
-                      {/* Photo */}
-                      <MemberPhotoUpload
-                        photo={member.photo}
-                        name={member.name}
-                        onPhotoChange={(photo) => updateMemberPhoto(member.id, photo)}
-                        size="md"
-                      />
-
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className="text-lg font-serif font-semibold truncate">{member.name}</h3>
-                          {stats.isWinner && (
-                            <span className="bg-secondary/20 text-secondary text-xs px-2 py-1 rounded-full flex-shrink-0">
-                              🏆 বিজয়ী
-                            </span>
-                          )}
+            return (
+              <Card 
+                key={member.id} 
+                className={`shadow-soft border-0 overflow-hidden transition-all hover:shadow-soft-lg ${
+                  hasUpdatedToday 
+                    ? 'ring-2 ring-success/30' 
+                    : 'ring-2 ring-secondary/30'
+                }`}
+              >
+                {/* Top gradient indicator */}
+                <div className={`h-1 ${hasUpdatedToday ? 'bg-success' : 'bg-secondary'}`} />
+                
+                <CardContent className="p-4">
+                  {/* Today's Prayer Status - Pill style */}
+                  <div className="flex gap-1.5 mb-4">
+                    {prayers.map(prayer => {
+                      const isCompleted = todayRecord?.prayers[prayer] ?? false;
+                      return (
+                        <div
+                          key={prayer}
+                          className={`flex-1 text-center py-1.5 px-1 rounded-lg text-xs font-medium transition-colors ${
+                            isCompleted 
+                              ? 'bg-primary text-primary-foreground' 
+                              : 'bg-muted text-muted-foreground'
+                          }`}
+                          title={isCompleted ? `${PRAYER_NAMES[prayer]} ✓` : `${PRAYER_NAMES[prayer]} - বাকি`}
+                        >
+                          {PRAYER_NAMES[prayer]}
                         </div>
-                        
-                        {/* Phone number */}
-                        {member.phone ? (
-                          <div className="flex items-center gap-1.5 text-sm text-muted-foreground mb-2">
-                            <Phone className="h-3.5 w-3.5" />
-                            <span>{member.phone}</span>
-                          </div>
-                        ) : (
-                          <button
-                            onClick={() => openPhoneDialog(member.id)}
-                            className="flex items-center gap-1.5 text-sm text-primary hover:underline mb-2"
-                          >
-                            <Phone className="h-3.5 w-3.5" />
-                            <span>নম্বর যোগ করুন</span>
-                          </button>
+                      );
+                    })}
+                  </div>
+
+                  <div className="flex items-start gap-4">
+                    {/* Photo */}
+                    <CloudMemberPhotoUpload
+                      photoUrl={member.photo}
+                      memberId={member.id}
+                      name={member.name}
+                      onPhotoChange={(url) => handlePhotoChange(member.id, url)}
+                      size="md"
+                    />
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="text-lg font-serif font-semibold truncate">{member.name}</h3>
+                        {stats.isWinner && (
+                          <span className="bg-secondary/20 text-secondary text-xs px-2 py-1 rounded-full flex-shrink-0">
+                            🏆 বিজয়ী
+                          </span>
                         )}
-                        
-                        {/* Stats row */}
-                        <div className="grid grid-cols-3 gap-3 text-sm">
-                          <div className="flex items-center gap-2">
-                            <div className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center">
-                              <Star className="h-3.5 w-3.5 text-primary" />
-                            </div>
-                            <span>
-                              <span className="font-medium">{toBanglaNumber(stats.totalPoints)}</span>
-                              <span className="text-muted-foreground text-xs"> পয়েন্ট</span>
-                            </span>
+                      </div>
+                      
+                      {/* Phone number */}
+                      {member.phone ? (
+                        <div className="flex items-center gap-1.5 text-sm text-muted-foreground mb-2">
+                          <Phone className="h-3.5 w-3.5" />
+                          <span>{member.phone}</span>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => openPhoneDialog(member.id)}
+                          className="flex items-center gap-1.5 text-sm text-primary hover:underline mb-2"
+                        >
+                          <Phone className="h-3.5 w-3.5" />
+                          <span>নম্বর যোগ করুন</span>
+                        </button>
+                      )}
+                      
+                      {/* Stats row */}
+                      <div className="grid grid-cols-3 gap-3 text-sm">
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center">
+                            <Star className="h-3.5 w-3.5 text-primary" />
                           </div>
-                          <div className="flex items-center gap-2">
-                            <div className="w-6 h-6 rounded-lg bg-success/10 flex items-center justify-center">
-                              <Calendar className="h-3.5 w-3.5 text-success" />
-                            </div>
-                            <span>
-                              <span className="font-medium">{toBanglaNumber(stats.activeDays)}</span>
-                              <span className="text-muted-foreground text-xs"> দিন</span>
-                            </span>
+                          <span>
+                            <span className="font-medium">{toBanglaNumber(stats.totalPoints)}</span>
+                            <span className="text-muted-foreground text-xs"> পয়েন্ট</span>
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-lg bg-success/10 flex items-center justify-center">
+                            <Calendar className="h-3.5 w-3.5 text-success" />
                           </div>
-                          <div className="flex items-center gap-2">
-                            <div className="w-6 h-6 rounded-lg bg-secondary/10 flex items-center justify-center">
-                              <Flame className="h-3.5 w-3.5 text-secondary" />
-                            </div>
-                            <span>
-                              <span className="font-medium">{toBanglaNumber(stats.currentStreak)}</span>
-                              <span className="text-muted-foreground text-xs"> ধারা</span>
-                            </span>
+                          <span>
+                            <span className="font-medium">{toBanglaNumber(stats.activeDays)}</span>
+                            <span className="text-muted-foreground text-xs"> দিন</span>
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-lg bg-secondary/10 flex items-center justify-center">
+                            <Flame className="h-3.5 w-3.5 text-secondary" />
                           </div>
+                          <span>
+                            <span className="font-medium">{toBanglaNumber(stats.currentStreak)}</span>
+                            <span className="text-muted-foreground text-xs"> ধারা</span>
+                          </span>
                         </div>
                       </div>
+                    </div>
 
+                    {isAdmin && (
                       <Button 
                         variant="ghost" 
                         size="icon" 
@@ -270,10 +357,11 @@ export default function Members() {
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            );
           })}
         </div>
       )}
@@ -298,8 +386,16 @@ export default function Members() {
             <Button 
               onClick={() => phoneDialogOpen && handleAddPhone(phoneDialogOpen)} 
               className="w-full rounded-xl"
+              disabled={isSubmitting}
             >
-              সংরক্ষণ করুন
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  সংরক্ষণ হচ্ছে...
+                </>
+              ) : (
+                'সংরক্ষণ করুন'
+              )}
             </Button>
           </div>
         </DialogContent>
@@ -344,8 +440,16 @@ export default function Members() {
                 variant="destructive"
                 onClick={() => deleteDialogOpen && handleDeleteMember(deleteDialogOpen)} 
                 className="flex-1 rounded-xl"
+                disabled={isSubmitting}
               >
-                মুছে ফেলুন
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    মুছছে...
+                  </>
+                ) : (
+                  'মুছে ফেলুন'
+                )}
               </Button>
             </div>
           </div>
