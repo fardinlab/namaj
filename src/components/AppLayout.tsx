@@ -10,7 +10,8 @@ import {
   X,
   Code,
   CalendarDays,
-  LogOut
+  LogOut,
+  Shield
 } from 'lucide-react';
 import { AppNavLink } from './AppNavLink';
 import { Button } from '@/components/ui/button';
@@ -100,6 +101,13 @@ export function AppLayout() {
               {item.label}
             </AppNavLink>
           ))}
+          
+          {/* Admin Panel - Only for admins */}
+          {isAdmin && (
+            <AppNavLink to="/admin" icon={Shield}>
+              অ্যাডমিন প্যানেল
+            </AppNavLink>
+          )}
         </nav>
 
         {/* User info and logout */}

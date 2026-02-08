@@ -13,6 +13,7 @@ import Leaderboard from "./pages/Leaderboard";
 import Campaign from "./pages/Campaign";
 import Settings from "./pages/Settings";
 import AboutDeveloper from "./pages/AboutDeveloper";
+import AdminPanel from "./pages/AdminPanel";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import NotFound from "./pages/NotFound";
@@ -44,6 +45,7 @@ const App = () => (
               <Route path="/campaign" element={<Campaign />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/about-developer" element={<AboutDeveloper />} />
+              <Route path="/admin" element={<AdminPanel />} />
             </Route>
             
             <Route path="*" element={<NotFound />} />

@@ -14,6 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      developer_bio: {
+        Row: {
+          bio: string
+          email: string | null
+          facebook_url: string | null
+          id: string
+          name: string
+          phone: string | null
+          photo_url: string | null
+          skills: string[] | null
+          telegram_url: string | null
+          title: string
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          bio?: string
+          email?: string | null
+          facebook_url?: string | null
+          id?: string
+          name?: string
+          phone?: string | null
+          photo_url?: string | null
+          skills?: string[] | null
+          telegram_url?: string | null
+          title?: string
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          bio?: string
+          email?: string | null
+          facebook_url?: string | null
+          id?: string
+          name?: string
+          phone?: string | null
+          photo_url?: string | null
+          skills?: string[] | null
+          telegram_url?: string | null
+          title?: string
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       email_verification_codes: {
         Row: {
           code: string
