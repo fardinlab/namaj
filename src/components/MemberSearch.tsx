@@ -1,8 +1,10 @@
 import { useState, useRef, useCallback } from 'react';
-import { Search, Camera, X, Loader2, User } from 'lucide-react';
+import { Search, Camera, X, Loader2, User, ChevronDown } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Member } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -10,9 +12,11 @@ import { toast } from 'sonner';
 interface MemberSearchProps {
   members: Member[];
   onSelectMember: (memberId: string) => void;
+  selectedMemberId?: string;
 }
 
-export function MemberSearch({ members, onSelectMember }: MemberSearchProps) {
+export function MemberSearch({ members, onSelectMember, selectedMemberId }: MemberSearchProps) {
+  const [searchMode, setSearchMode] = useState<'select' | 'search'>('select');
   const [searchQuery, setSearchQuery] = useState('');
   const [showCamera, setShowCamera] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
@@ -138,76 +142,132 @@ export function MemberSearch({ members, onSelectMember }: MemberSearchProps) {
 
   return (
     <div className="space-y-3">
-      {/* Search Input with Camera Button */}
-      <div className="flex gap-2">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            type="text"
-            placeholder="নাম বা নম্বর দিয়ে খুঁজুন..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 h-12"
-          />
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          )}
-        </div>
-        <Button
-          variant="outline"
-          size="icon"
-          className="h-12 w-12 shrink-0"
-          onClick={handleOpenCamera}
-        >
-          <Camera className="h-5 w-5" />
-        </Button>
-      </div>
+      {/* Mode Toggle Tabs */}
+      <Tabs value={searchMode} onValueChange={(v) => setSearchMode(v as 'select' | 'search')} className="w-full">
+        <TabsList className="grid w-full grid-cols-2 h-10">
+          <TabsTrigger value="select" className="text-sm">
+            <ChevronDown className="h-4 w-4 mr-1.5" />
+            তালিকা থেকে
+          </TabsTrigger>
+          <TabsTrigger value="search" className="text-sm">
+            <Search className="h-4 w-4 mr-1.5" />
+            খুঁজুন
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
 
-      {/* Search Results */}
-      {searchQuery && (
-        <div className="bg-card border rounded-xl overflow-hidden">
-          {filteredMembers.length > 0 ? (
-            <div className="divide-y">
-              {filteredMembers.map(member => (
-                <button
-                  key={member.id}
-                  onClick={() => {
-                    onSelectMember(member.id);
-                    setSearchQuery('');
-                  }}
-                  className="w-full flex items-center gap-3 p-3 hover:bg-muted/50 transition-colors text-left"
-                >
-                  {member.photo ? (
-                    <img
-                      src={member.photo}
-                      alt={member.name}
-                      className="w-10 h-10 rounded-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
-                      <User className="h-5 w-5 text-muted-foreground" />
-                    </div>
-                  )}
-                  <div>
-                    <p className="font-medium">{member.name}</p>
-                    {member.phone && (
-                      <p className="text-sm text-muted-foreground">{member.phone}</p>
+      {/* Dropdown Select Mode */}
+      {searchMode === 'select' && (
+        <div className="flex gap-2">
+          <Select value={selectedMemberId || ''} onValueChange={onSelectMember}>
+            <SelectTrigger className="w-full h-12 text-base bg-card border-2 border-border focus:border-primary">
+              <SelectValue placeholder="সদস্য নির্বাচন করুন" />
+            </SelectTrigger>
+            <SelectContent className="bg-popover border shadow-lg z-50">
+              {members.map(member => (
+                <SelectItem key={member.id} value={member.id} className="text-base py-3">
+                  <div className="flex items-center gap-2">
+                    {member.photo ? (
+                      <img src={member.photo} alt="" className="w-6 h-6 rounded-full object-cover" />
+                    ) : (
+                      <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center">
+                        <User className="h-3 w-3 text-muted-foreground" />
+                      </div>
                     )}
+                    <span>{member.name}</span>
                   </div>
-                </button>
+                </SelectItem>
               ))}
+            </SelectContent>
+          </Select>
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-12 w-12 shrink-0"
+            onClick={handleOpenCamera}
+            title="ফেস রিকগনিশন"
+          >
+            <Camera className="h-5 w-5" />
+          </Button>
+        </div>
+      )}
+
+      {/* Search Mode */}
+      {searchMode === 'search' && (
+        <>
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="নাম বা নম্বর দিয়ে খুঁজুন..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 h-12"
+                autoFocus
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
             </div>
-          ) : (
-            <div className="p-4 text-center text-muted-foreground">
-              কোনো সদস্য পাওয়া যায়নি
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-12 w-12 shrink-0"
+              onClick={handleOpenCamera}
+              title="ফেস রিকগনিশন"
+            >
+              <Camera className="h-5 w-5" />
+            </Button>
+          </div>
+
+          {/* Search Results */}
+          {searchQuery && (
+            <div className="bg-card border rounded-xl overflow-hidden shadow-sm">
+              {filteredMembers.length > 0 ? (
+                <div className="divide-y max-h-64 overflow-y-auto">
+                  {filteredMembers.map(member => (
+                    <button
+                      key={member.id}
+                      onClick={() => {
+                        onSelectMember(member.id);
+                        setSearchQuery('');
+                      }}
+                      className="w-full flex items-center gap-3 p-3 hover:bg-muted/50 transition-colors text-left"
+                    >
+                      {member.photo ? (
+                        <img
+                          src={member.photo}
+                          alt={member.name}
+                          className="w-10 h-10 rounded-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
+                          <User className="h-5 w-5 text-muted-foreground" />
+                        </div>
+                      )}
+                      <div>
+                        <p className="font-medium">{member.name}</p>
+                        {member.phone && (
+                          <p className="text-sm text-muted-foreground">{member.phone}</p>
+                        )}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-4 text-center text-muted-foreground">
+                  কোনো সদস্য পাওয়া যায়নি
+                </div>
+              )}
             </div>
           )}
-        </div>
+        </>
       )}
 
       {/* Camera Dialog */}
