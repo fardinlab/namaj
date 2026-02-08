@@ -157,12 +157,12 @@ export function MemberSearch({ members, onSelectMember, selectedMemberId }: Memb
     <div className="space-y-3">
       {/* Mode Toggle Tabs */}
       <Tabs value={searchMode} onValueChange={(v) => setSearchMode(v as 'select' | 'search')} className="w-full">
-        <TabsList className="grid w-full grid-cols-2 h-10">
-          <TabsTrigger value="select" className="text-sm">
+        <TabsList className="grid w-full grid-cols-2 h-11 rounded-xl bg-muted/50 p-1">
+          <TabsTrigger value="select" className="text-sm rounded-lg data-[state=active]:bg-card data-[state=active]:shadow-soft">
             <ChevronDown className="h-4 w-4 mr-1.5" />
             তালিকা থেকে
           </TabsTrigger>
-          <TabsTrigger value="search" className="text-sm">
+          <TabsTrigger value="search" className="text-sm rounded-lg data-[state=active]:bg-card data-[state=active]:shadow-soft">
             <Search className="h-4 w-4 mr-1.5" />
             খুঁজুন
           </TabsTrigger>
@@ -173,18 +173,18 @@ export function MemberSearch({ members, onSelectMember, selectedMemberId }: Memb
       {searchMode === 'select' && (
         <div className="flex gap-2">
           <Select value={selectedMemberId || ''} onValueChange={onSelectMember}>
-            <SelectTrigger className="w-full h-12 text-base bg-card border-2 border-border focus:border-primary">
+            <SelectTrigger className="w-full h-12 text-base bg-card border-0 shadow-soft rounded-xl focus:ring-2 focus:ring-primary/30">
               <SelectValue placeholder="সদস্য নির্বাচন করুন" />
             </SelectTrigger>
-            <SelectContent className="bg-popover border shadow-lg z-50">
+            <SelectContent className="bg-popover border-0 shadow-soft-lg rounded-xl z-50">
               {members.map(member => (
-                <SelectItem key={member.id} value={member.id} className="text-base py-3">
+                <SelectItem key={member.id} value={member.id} className="text-base py-3 rounded-lg">
                   <div className="flex items-center gap-2">
                     {member.photo ? (
-                      <img src={member.photo} alt="" className="w-6 h-6 rounded-full object-cover" />
+                      <img src={member.photo} alt="" className="w-7 h-7 rounded-full object-cover ring-1 ring-border" />
                     ) : (
-                      <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center">
-                        <User className="h-3 w-3 text-muted-foreground" />
+                      <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center">
+                        <User className="h-4 w-4 text-primary" />
                       </div>
                     )}
                     <span>{member.name}</span>
@@ -196,7 +196,7 @@ export function MemberSearch({ members, onSelectMember, selectedMemberId }: Memb
           <Button
             variant="outline"
             size="icon"
-            className="h-12 w-12 shrink-0"
+            className="h-12 w-12 shrink-0 rounded-xl border-0 shadow-soft bg-card hover:bg-muted"
             onClick={handleOpenCamera}
             title="ফেস রিকগনিশন"
           >
@@ -210,19 +210,19 @@ export function MemberSearch({ members, onSelectMember, selectedMemberId }: Memb
         <>
           <div className="flex gap-2">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 type="text"
                 placeholder="নাম বা নম্বর দিয়ে খুঁজুন..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 h-12"
+                className="pl-11 h-12 rounded-xl border-0 shadow-soft bg-card"
                 autoFocus
               />
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -231,7 +231,7 @@ export function MemberSearch({ members, onSelectMember, selectedMemberId }: Memb
             <Button
               variant="outline"
               size="icon"
-              className="h-12 w-12 shrink-0"
+              className="h-12 w-12 shrink-0 rounded-xl border-0 shadow-soft bg-card hover:bg-muted"
               onClick={handleOpenCamera}
               title="ফেস রিকগনিশন"
             >
@@ -241,9 +241,9 @@ export function MemberSearch({ members, onSelectMember, selectedMemberId }: Memb
 
           {/* Search Results */}
           {searchQuery && (
-            <div className="bg-card border rounded-xl overflow-hidden shadow-sm">
+            <div className="bg-card rounded-xl overflow-hidden shadow-soft">
               {filteredMembers.length > 0 ? (
-                <div className="divide-y max-h-64 overflow-y-auto">
+                <div className="divide-y divide-border/50 max-h-64 overflow-y-auto">
                   {filteredMembers.map(member => (
                     <button
                       key={member.id}
@@ -251,17 +251,17 @@ export function MemberSearch({ members, onSelectMember, selectedMemberId }: Memb
                         onSelectMember(member.id);
                         setSearchQuery('');
                       }}
-                      className="w-full flex items-center gap-3 p-3 hover:bg-muted/50 transition-colors text-left"
+                      className="w-full flex items-center gap-3 p-4 hover:bg-muted/50 transition-colors text-left"
                     >
                       {member.photo ? (
                         <img
                           src={member.photo}
                           alt={member.name}
-                          className="w-10 h-10 rounded-full object-cover"
+                          className="w-10 h-10 rounded-full object-cover ring-1 ring-border"
                         />
                       ) : (
-                        <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
-                          <User className="h-5 w-5 text-muted-foreground" />
+                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                          <User className="h-5 w-5 text-primary" />
                         </div>
                       )}
                       <div>
@@ -285,9 +285,9 @@ export function MemberSearch({ members, onSelectMember, selectedMemberId }: Memb
 
       {/* Camera Dialog */}
       <Dialog open={showCamera} onOpenChange={(open) => !open && handleCloseCamera()}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md rounded-2xl">
           <DialogHeader>
-            <DialogTitle className="text-center">ফেস রিকগনিশন</DialogTitle>
+            <DialogTitle className="text-center font-serif">ফেস রিকগনিশন</DialogTitle>
           </DialogHeader>
           
           <div className="space-y-4">
@@ -300,7 +300,7 @@ export function MemberSearch({ members, onSelectMember, selectedMemberId }: Memb
                   setCameraFacing('user');
                   startCamera('user');
                 }}
-                className="flex-1"
+                className="flex-1 rounded-xl"
               >
                 <Camera className="h-4 w-4 mr-2" />
                 ফ্রন্ট ক্যামেরা
@@ -312,7 +312,7 @@ export function MemberSearch({ members, onSelectMember, selectedMemberId }: Memb
                   setCameraFacing('environment');
                   startCamera('environment');
                 }}
-                className="flex-1"
+                className="flex-1 rounded-xl"
               >
                 <SwitchCamera className="h-4 w-4 mr-2" />
                 ব্যাক ক্যামেরা
@@ -320,11 +320,11 @@ export function MemberSearch({ members, onSelectMember, selectedMemberId }: Memb
             </div>
 
             {cameraError ? (
-              <div className="aspect-video bg-muted rounded-lg flex items-center justify-center">
+              <div className="aspect-video bg-muted rounded-xl flex items-center justify-center">
                 <p className="text-sm text-destructive text-center px-4">{cameraError}</p>
               </div>
             ) : (
-              <div className="relative aspect-video bg-black rounded-lg overflow-hidden">
+              <div className="relative aspect-video bg-foreground/5 rounded-xl overflow-hidden">
                 <video
                   ref={videoRef}
                   autoPlay
@@ -336,8 +336,8 @@ export function MemberSearch({ members, onSelectMember, selectedMemberId }: Memb
                   )}
                 />
                 {isScanning && (
-                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                    <div className="text-center text-white">
+                  <div className="absolute inset-0 bg-foreground/50 flex items-center justify-center">
+                    <div className="text-center text-card">
                       <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" />
                       <p className="text-sm">সনাক্ত করা হচ্ছে...</p>
                     </div>
@@ -351,13 +351,13 @@ export function MemberSearch({ members, onSelectMember, selectedMemberId }: Memb
             <div className="flex gap-2">
               <Button
                 variant="outline"
-                className="flex-1"
+                className="flex-1 rounded-xl"
                 onClick={handleCloseCamera}
               >
                 বাতিল
               </Button>
               <Button
-                className="flex-1"
+                className="flex-1 rounded-xl"
                 onClick={captureAndRecognize}
                 disabled={isScanning || !!cameraError}
               >

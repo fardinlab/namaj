@@ -102,9 +102,11 @@ export default function PrayerHistory() {
   if (members.length === 0) {
     return (
       <div className="max-w-2xl mx-auto px-4 py-12">
-        <Card className="text-center py-12 border-dashed">
+        <Card className="text-center py-12 border-0 shadow-soft">
           <CardContent className="space-y-4">
-            <CalendarDays className="h-12 w-12 text-muted-foreground/50 mx-auto" />
+            <div className="w-16 h-16 mx-auto rounded-full bg-primary/10 flex items-center justify-center">
+              <CalendarDays className="h-8 w-8 text-primary" />
+            </div>
             <p className="text-muted-foreground">প্রথমে সদস্য যোগ করুন</p>
           </CardContent>
         </Card>
@@ -113,26 +115,21 @@ export default function PrayerHistory() {
   }
 
   return (
-    <div className="space-y-4 max-w-2xl mx-auto pb-8">
+    <div className="space-y-6 max-w-2xl mx-auto pb-8">
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <div className="p-2 bg-primary/10 rounded-lg">
-          <CalendarDays className="h-5 w-5 text-primary" />
-        </div>
-        <div>
-          <h1 className="text-xl font-bold text-foreground">নামাজ আদায়ের তারিখ ও তালিকা</h1>
-          <p className="text-sm text-muted-foreground">প্রতিটি সদস্যের বিস্তারিত রেকর্ড</p>
-        </div>
+      <div className="text-center">
+        <h1 className="text-2xl font-serif font-bold mb-2">নামাজের ইতিহাস</h1>
+        <p className="text-sm text-muted-foreground">প্রতিটি সদস্যের বিস্তারিত রেকর্ড</p>
       </div>
 
       {/* Member Selector */}
-      <Card>
+      <Card className="border-0 shadow-soft">
         <CardContent className="pt-4">
           <Select value={selectedMemberId} onValueChange={setSelectedMemberId}>
-            <SelectTrigger className="h-12 text-base">
+            <SelectTrigger className="h-12 text-base rounded-xl">
               <SelectValue placeholder="সদস্য নির্বাচন করুন" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="rounded-xl">
               {members.map(member => (
                 <SelectItem key={member.id} value={member.id} className="py-3">
                   {member.name}
@@ -144,9 +141,11 @@ export default function PrayerHistory() {
       </Card>
 
       {!selectedMemberId ? (
-        <Card>
+        <Card className="border-0 shadow-soft">
           <CardContent className="py-12 text-center">
-            <User className="h-12 w-12 text-muted-foreground/50 mx-auto mb-3" />
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center">
+              <User className="h-8 w-8 text-primary" />
+            </div>
             <p className="text-muted-foreground">একজন সদস্য নির্বাচন করুন</p>
           </CardContent>
         </Card>
@@ -154,39 +153,42 @@ export default function PrayerHistory() {
         <>
           {/* Summary Stats */}
           {stats && (
-            <Card className="bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
+            <Card className="border-0 shadow-soft overflow-hidden">
+              <div className="h-1 bg-gradient-to-r from-primary to-secondary" />
               <CardHeader className="pb-2">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4 text-primary" />
+                <CardTitle className="text-base font-serif flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <TrendingUp className="h-4 w-4 text-primary" />
+                  </div>
                   {selectedMember?.name} - সামগ্রিক পরিসংখ্যান
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-background/80 rounded-lg p-3 text-center">
+                  <div className="bg-muted/50 rounded-xl p-3 text-center">
                     <p className="text-2xl font-bold text-primary">{toBanglaNumber(stats.totalDays)}</p>
                     <p className="text-xs text-muted-foreground">মোট দিন</p>
                   </div>
-                  <div className="bg-background/80 rounded-lg p-3 text-center">
-                    <p className="text-2xl font-bold text-green-600">{toBanglaNumber(stats.daysWithFajrIsha)}</p>
+                  <div className="bg-muted/50 rounded-xl p-3 text-center">
+                    <p className="text-2xl font-bold text-success">{toBanglaNumber(stats.daysWithFajrIsha)}</p>
                     <p className="text-xs text-muted-foreground">ফজর+এশা দিন</p>
                   </div>
-                  <div className="bg-background/80 rounded-lg p-3 text-center">
+                  <div className="bg-muted/50 rounded-xl p-3 text-center">
                     <p className="text-2xl font-bold text-primary">{toBanglaNumber(stats.totalRakat)}</p>
                     <p className="text-xs text-muted-foreground">পড়া রাকাত</p>
                   </div>
-                  <div className="bg-background/80 rounded-lg p-3 text-center">
+                  <div className="bg-muted/50 rounded-xl p-3 text-center">
                     <p className="text-2xl font-bold text-destructive">{toBanglaNumber(stats.missedRakat)}</p>
                     <p className="text-xs text-muted-foreground">বাদ রাকাত</p>
                   </div>
                 </div>
 
-                <div className="mt-3 pt-3 border-t border-border/50">
+                <div className="mt-4 pt-4 border-t border-border/50 space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">মোট ওয়াক্ত পড়েছে:</span>
                     <span className="font-medium text-primary">{toBanglaNumber(stats.totalPrayers)} ওয়াক্ত</span>
                   </div>
-                  <div className="flex justify-between text-sm mt-1">
+                  <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">বাদ পড়েছে:</span>
                     <span className="font-medium text-destructive">{toBanglaNumber(stats.missedPrayers)} ওয়াক্ত</span>
                   </div>
@@ -197,9 +199,11 @@ export default function PrayerHistory() {
 
           {/* Daily Records */}
           {memberRecords.length === 0 ? (
-            <Card>
+            <Card className="border-0 shadow-soft">
               <CardContent className="py-12 text-center">
-                <CalendarDays className="h-12 w-12 text-muted-foreground/50 mx-auto mb-3" />
+                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center">
+                  <CalendarDays className="h-8 w-8 text-primary" />
+                </div>
                 <p className="text-muted-foreground">এই সদস্যের কোনো নামাজের রেকর্ড নেই</p>
               </CardContent>
             </Card>
@@ -220,26 +224,26 @@ export default function PrayerHistory() {
                   <Card 
                     key={record.date}
                     className={cn(
-                      isPerfect && "border-primary/30 bg-primary/5"
+                      "border-0 shadow-soft overflow-hidden",
+                      isPerfect && "ring-1 ring-primary/30"
                     )}
                   >
+                    {isPerfect && <div className="h-0.5 bg-primary" />}
                     <CardHeader className="pb-2">
                       <CardTitle className="text-sm font-medium flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <span className="text-primary">
+                          <span className="text-primary font-serif">
                             {formatBanglaDate(new Date(record.date))}
                           </span>
                           {hasFajrIsha && (
-                            <Badge variant="outline" className="text-[10px] bg-green-500/10 text-green-600 border-green-500/30">
+                            <Badge variant="outline" className="text-[10px] bg-success/10 text-success border-success/30 rounded-full">
                               ফজর+এশা ✓
                             </Badge>
                           )}
                         </div>
-                        <div className="flex gap-2">
-                          <Badge variant={isPerfect ? "default" : "secondary"} className="text-xs">
-                            {toBanglaNumber(prayerCount)}/৫
-                          </Badge>
-                        </div>
+                        <Badge variant={isPerfect ? "default" : "secondary"} className="text-xs rounded-full">
+                          {toBanglaNumber(prayerCount)}/৫
+                        </Badge>
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3">
@@ -251,7 +255,7 @@ export default function PrayerHistory() {
                             <div
                               key={prayer}
                               className={cn(
-                                "flex items-center gap-1 px-2 py-1.5 rounded-md text-xs font-medium",
+                                "flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors",
                                 isCompleted 
                                   ? "bg-primary text-primary-foreground" 
                                   : "bg-destructive/10 text-destructive"
