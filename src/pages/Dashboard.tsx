@@ -66,7 +66,8 @@ export default function Dashboard() {
       {/* Member Search with Camera */}
       <MemberSearch 
         members={members} 
-        onSelectMember={setSelectedMemberId} 
+        onSelectMember={setSelectedMemberId}
+        selectedMemberId={selectedMemberId}
       />
 
       {selectedMember && (
