@@ -183,8 +183,13 @@ export default function Dashboard() {
             </div>
           )}
 
-          {/* Calendar */}
-          <CalendarGrid attendance={attendance} memberId={selectedMemberId} config={config} />
+          {/* Calendar - Click to edit past prayers */}
+          <CalendarGrid 
+            attendance={attendance} 
+            memberId={selectedMemberId} 
+            config={config} 
+            onTogglePrayer={togglePrayer}
+          />
         </>
       )}
     </div>
