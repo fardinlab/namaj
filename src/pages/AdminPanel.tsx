@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 import { 
   Shield, 
   Users, 
@@ -24,8 +24,7 @@ import {
   User,
   Calendar
 } from 'lucide-react';
-import { useLocalStorage } from '@/hooks/useLocalStorage';
-import { useCampaignData } from '@/hooks/useCampaignData';
+import { useCloudCampaignData } from '@/hooks/useCloudCampaignData';
 import { toast } from 'sonner';
 
 interface DeveloperBio {
@@ -39,13 +38,6 @@ interface DeveloperBio {
   phone: string | null;
   email: string | null;
   skills: string[];
-}
-
-interface Member {
-  id: string;
-  name: string;
-  phone?: string;
-  photo?: string;
 }
 
 export default function AdminPanel() {
@@ -63,8 +55,20 @@ export default function AdminPanel() {
     skills: ''
   });
   const [secretCode, setSecretCode] = useState('');
-  const [members] = useLocalStorage<Member[]>('members', []);
-  const { config, updateConfig } = useCampaignData();
+  const [deletingMemberId, setDeletingMemberId] = useState<string | null>(null);
+  
+  const { 
+    members, 
+    cloudMembers,
+    cloudAttendance,
+    config, 
+    updateConfig, 
+    removeMember,
+    deleteAttendanceByDate,
+    loading: dataLoading,
+    refetch
+  } = useCloudCampaignData();
+  
   const [campaignForm, setCampaignForm] = useState({
     startDate: '',
     endDate: ''
@@ -142,29 +146,53 @@ export default function AdminPanel() {
     }
   };
 
-  const handleSaveCampaign = () => {
-    updateConfig({
-      startDate: campaignForm.startDate,
-      endDate: campaignForm.endDate
-    });
-    toast.success('ক্যাম্পেইন সেটিংস সংরক্ষিত হয়েছে');
+  const handleSaveCampaign = async () => {
+    setLoading(true);
+    try {
+      await updateConfig({
+        startDate: campaignForm.startDate,
+        endDate: campaignForm.endDate
+      });
+      toast.success('ক্যাম্পেইন সেটিংস সংরক্ষিত হয়েছে');
+    } catch (error) {
+      console.error('Error saving campaign:', error);
+      toast.error('সংরক্ষণ করতে সমস্যা হয়েছে');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleResetPrayerData = () => {
+  const handleResetPrayerData = async () => {
     if (secretCode !== 'FARDIN') {
       toast.error('ভুল সিক্রেট কোড');
       return;
     }
 
-    localStorage.removeItem('attendance');
-    toast.success('সব নামাজের ডাটা মুছে ফেলা হয়েছে');
-    setSecretCode('');
+    setLoading(true);
+    try {
+      // Delete all attendance records
+      const { error } = await supabase
+        .from('attendance')
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all
+      
+      if (error) throw error;
+      
+      toast.success('সব নামাজের ডাটা মুছে ফেলা হয়েছে');
+      setSecretCode('');
+      refetch();
+    } catch (error) {
+      console.error('Error resetting data:', error);
+      toast.error('ডাটা মুছতে সমস্যা হয়েছে');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleExportData = () => {
     const data = {
-      members: members,
-      attendance: JSON.parse(localStorage.getItem('campaign-attendance') || '[]'),
+      members: cloudMembers,
+      attendance: cloudAttendance,
       campaign: config,
       exportedAt: new Date().toISOString()
     };
@@ -179,17 +207,22 @@ export default function AdminPanel() {
     toast.success('ডাটা এক্সপোর্ট হয়েছে');
   };
 
-  const handleDeleteMember = (memberId: string) => {
-    if (secretCode !== 'FARDIN') {
+  const handleDeleteMember = async (memberId: string, code: string) => {
+    if (code !== 'FARDIN') {
       toast.error('ভুল সিক্রেট কোড');
       return;
     }
 
-    const updatedMembers = members.filter(m => m.id !== memberId);
-    localStorage.setItem('members', JSON.stringify(updatedMembers));
-    toast.success('সদস্য মুছে ফেলা হয়েছে');
-    setSecretCode('');
-    window.location.reload();
+    setDeletingMemberId(memberId);
+    try {
+      await removeMember(memberId);
+      toast.success('সদস্য মুছে ফেলা হয়েছে');
+    } catch (error) {
+      console.error('Error deleting member:', error);
+      toast.error('সদস্য মুছতে সমস্যা হয়েছে');
+    } finally {
+      setDeletingMemberId(null);
+    }
   };
 
   if (!isAdmin) {
@@ -208,6 +241,22 @@ export default function AdminPanel() {
     );
   }
 
+  if (dataLoading) {
+    return (
+      <div className="max-w-4xl mx-auto space-y-6">
+        <div className="flex items-center gap-3">
+          <Skeleton className="h-10 w-10" />
+          <div>
+            <Skeleton className="h-8 w-48 mb-2" />
+            <Skeleton className="h-4 w-64" />
+          </div>
+        </div>
+        <Skeleton className="h-12 w-full" />
+        <Skeleton className="h-96 w-full" />
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Header */}
@@ -217,7 +266,7 @@ export default function AdminPanel() {
         </div>
         <div>
           <h1 className="text-2xl font-serif font-bold">অ্যাডমিন প্যানেল</h1>
-          <p className="text-sm text-muted-foreground">সব সেটিংস এখানে পরিচালনা করুন</p>
+          <p className="text-sm text-muted-foreground">সব সেটিংস এখানে পরিচালনা করুন (Cloud-based)</p>
         </div>
       </div>
 
@@ -255,19 +304,19 @@ export default function AdminPanel() {
             
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">ক্যাম্পেইন শুরু</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted-foreground">মোট নামাজ রেকর্ড</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-lg font-semibold">{config?.startDate || 'সেট করা হয়নি'}</div>
+                <div className="text-2xl font-bold">{cloudAttendance.length}</div>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">ক্যাম্পেইন শেষ</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted-foreground">ক্যাম্পেইন সময়কাল</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-lg font-semibold">{config?.endDate || 'সেট করা হয়নি'}</div>
+                <div className="text-sm font-semibold">{config?.startDate} → {config?.endDate}</div>
               </CardContent>
             </Card>
           </div>
@@ -275,12 +324,12 @@ export default function AdminPanel() {
           <Card>
             <CardHeader>
               <CardTitle>ডাটা ম্যানেজমেন্ট</CardTitle>
-              <CardDescription>ব্যাকআপ এবং রিসেট অপশন</CardDescription>
+              <CardDescription>ব্যাকআপ এবং রিসেট অপশন (Cloud data)</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <Button onClick={handleExportData} className="w-full sm:w-auto">
                 <Download className="h-4 w-4 mr-2" />
-                সব ডাটা এক্সপোর্ট করুন
+                সব ডাটা এক্সপোর্ট করুন (JSON)
               </Button>
 
               <div className="border-t pt-4">
@@ -299,9 +348,13 @@ export default function AdminPanel() {
                   <Button 
                     variant="destructive" 
                     onClick={handleResetPrayerData}
-                    disabled={!secretCode}
+                    disabled={!secretCode || loading}
                   >
-                    <RefreshCw className="h-4 w-4 mr-2" />
+                    {loading ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                    )}
                     সব নামাজ ডাটা রিসেট
                   </Button>
                 </div>
@@ -314,7 +367,7 @@ export default function AdminPanel() {
         <TabsContent value="members" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>সদস্য তালিকা</CardTitle>
+              <CardTitle>সদস্য তালিকা (Cloud)</CardTitle>
               <CardDescription>মোট {members.length} জন সদস্য</CardDescription>
             </CardHeader>
             <CardContent>
@@ -350,15 +403,19 @@ export default function AdminPanel() {
                         variant="ghost"
                         size="icon"
                         className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                        disabled={deletingMemberId === member.id}
                         onClick={() => {
                           const code = prompt('সিক্রেট কোড দিন:');
                           if (code) {
-                            setSecretCode(code);
-                            handleDeleteMember(member.id);
+                            handleDeleteMember(member.id, code);
                           }
                         }}
                       >
-                        <Trash2 className="h-4 w-4" />
+                        {deletingMemberId === member.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-4 w-4" />
+                        )}
                       </Button>
                     </div>
                   ))}
@@ -373,7 +430,7 @@ export default function AdminPanel() {
           <Card>
             <CardHeader>
               <CardTitle>ক্যাম্পেইন সেটিংস</CardTitle>
-              <CardDescription>তারিখ পরিবর্তন করুন</CardDescription>
+              <CardDescription>তারিখ পরিবর্তন করুন (Cloud-based)</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
@@ -396,8 +453,12 @@ export default function AdminPanel() {
                   />
                 </div>
               </div>
-              <Button onClick={handleSaveCampaign}>
-                <Save className="h-4 w-4 mr-2" />
+              <Button onClick={handleSaveCampaign} disabled={loading}>
+                {loading ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Save className="h-4 w-4 mr-2" />
+                )}
                 সংরক্ষণ করুন
               </Button>
             </CardContent>
@@ -480,24 +541,19 @@ export default function AdminPanel() {
                 <Label htmlFor="skills">দক্ষতা (কমা দিয়ে আলাদা করুন)</Label>
                 <Input
                   id="skills"
+                  placeholder="Software Development, Digital Marketing, SEO"
                   value={bioForm.skills}
                   onChange={(e) => setBioForm(prev => ({ ...prev, skills: e.target.value }))}
-                  placeholder="React, TypeScript, Node.js"
                 />
               </div>
 
               <Button onClick={handleSaveBio} disabled={loading}>
                 {loading ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    সংরক্ষণ হচ্ছে...
-                  </>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 ) : (
-                  <>
-                    <Save className="h-4 w-4 mr-2" />
-                    সংরক্ষণ করুন
-                  </>
+                  <Save className="h-4 w-4 mr-2" />
                 )}
+                সংরক্ষণ করুন
               </Button>
             </CardContent>
           </Card>

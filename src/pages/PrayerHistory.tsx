@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { useCampaignData } from '@/hooks/useCampaignData';
+import { useCloudCampaignData } from '@/hooks/useCloudCampaignData';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 import { CalendarDays, CheckCircle2, XCircle, User, TrendingUp } from 'lucide-react';
 import { formatBanglaDate, toBanglaNumber } from '@/lib/bangla-utils';
 import { PRAYER_NAMES, PrayerName } from '@/lib/types';
@@ -20,7 +21,7 @@ const RAKAT_COUNT: Record<PrayerName, number> = {
 const TOTAL_DAILY_RAKAT = 17; // 2+4+4+3+4
 
 export default function PrayerHistory() {
-  const { members, attendance } = useCampaignData();
+  const { members, attendance, loading } = useCloudCampaignData();
   const [selectedMemberId, setSelectedMemberId] = useState<string>('');
 
   const prayers: PrayerName[] = ['fajr', 'zuhr', 'asr', 'maghrib', 'isha'];
@@ -98,6 +99,19 @@ export default function PrayerHistory() {
     });
     return missed;
   };
+
+  if (loading) {
+    return (
+      <div className="space-y-6 max-w-2xl mx-auto pb-8">
+        <div className="text-center">
+          <Skeleton className="h-8 w-48 mx-auto mb-2" />
+          <Skeleton className="h-4 w-36 mx-auto" />
+        </div>
+        <Skeleton className="h-16 w-full" />
+        <Skeleton className="h-48 w-full" />
+      </div>
+    );
+  }
 
   if (members.length === 0) {
     return (

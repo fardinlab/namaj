@@ -1,10 +1,11 @@
-import { useCampaignData } from '@/hooks/useCampaignData';
+import { useCloudCampaignData } from '@/hooks/useCloudCampaignData';
 import { formatBanglaDate, toBanglaNumber, getTotalDays, getRemainingDays, getDayNumber } from '@/lib/bangla-utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Calendar, Target, Clock, Flag, Users, Star } from 'lucide-react';
 
 export default function Campaign() {
-  const { config, members, getLeaderboard } = useCampaignData();
+  const { config, members, getLeaderboard, loading } = useCloudCampaignData();
   
   const today = new Date();
   const startDate = new Date(config.startDate);
@@ -18,6 +19,20 @@ export default function Campaign() {
 
   const hasStarted = today >= startDate;
   const hasEnded = today > endDate;
+
+  if (loading) {
+    return (
+      <div className="max-w-2xl mx-auto space-y-6">
+        <div className="text-center">
+          <Skeleton className="h-4 w-32 mx-auto mb-2" />
+          <Skeleton className="h-8 w-48 mx-auto mb-2" />
+          <Skeleton className="h-4 w-40 mx-auto" />
+        </div>
+        <Skeleton className="h-20 w-full" />
+        <Skeleton className="h-64 w-full" />
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
