@@ -1,0 +1,4 @@
+project_id = "twuaomiwqqtgaaouurhm"
+
+[functions.face-recognition]
+verify_jwt = false
