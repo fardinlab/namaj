@@ -560,11 +560,12 @@ export function useCloudCampaignData() {
     if (existing) {
       const updatedRecord = { ...existing, [prayer]: !existing[prayer] };
 
-      // Optimistic update
+      // Optimistic update - always update local state first
       setAttendance(prev => prev.map(a => 
         a.id === existing.id ? updatedRecord : a
       ));
 
+      // Save to IndexedDB cache
       if (dbReady) {
         await put('attendance', updatedRecord);
       }
@@ -579,23 +580,40 @@ export function useCloudCampaignData() {
           })
           .eq('id', existing.id);
 
-        if (error) throw error;
+        if (error) {
+          // Rollback optimistic update
+          setAttendance(prev => prev.map(a => 
+            a.id === existing.id ? existing : a
+          ));
+          if (dbReady) {
+            await put('attendance', existing);
+          }
+          throw error;
+        }
       } else {
-        await addToSyncQueue({
-          store: 'attendance',
-          action: 'update',
-          data: {
-            id: existing.id,
-            [prayer]: !existing[prayer],
-            updated_at: new Date().toISOString(),
-            updated_by: user?.id,
-          },
+        // Offline: queue for sync
+        if (dbReady) {
+          await addToSyncQueue({
+            store: 'attendance',
+            action: 'update',
+            data: {
+              id: existing.id,
+              [prayer]: !existing[prayer],
+              updated_at: new Date().toISOString(),
+              updated_by: user?.id,
+            },
+          });
+        }
+
+        toast({
+          title: 'Offline এ সংরক্ষিত ✓',
+          description: 'Online হলে Cloud এ sync হবে',
         });
       }
     } else {
       // Create new record
       const newRecord: CloudAttendance = {
-        id: isOnline ? '' : `temp_${Date.now()}`,
+        id: `temp_${Date.now()}`,
         member_id: memberId,
         date,
         fajr: prayer === 'fajr',
@@ -604,6 +622,13 @@ export function useCloudCampaignData() {
         maghrib: prayer === 'maghrib',
         isha: prayer === 'isha',
       };
+
+      // Optimistic update - always add to local state first
+      setAttendance(prev => [...prev, newRecord]);
+
+      if (dbReady) {
+        await put('attendance', newRecord);
+      }
 
       if (isOnline) {
         const { data, error } = await supabase
@@ -621,20 +646,26 @@ export function useCloudCampaignData() {
           .select()
           .single();
 
-        if (error) throw error;
+        if (error) {
+          // Rollback
+          setAttendance(prev => prev.filter(a => a.id !== newRecord.id));
+          if (dbReady) {
+            await remove('attendance', newRecord.id);
+          }
+          throw error;
+        }
         
         if (data) {
-          setAttendance(prev => [...prev, data]);
+          // Replace temp record with real one
+          setAttendance(prev => prev.map(a => a.id === newRecord.id ? data : a));
           if (dbReady) {
+            await remove('attendance', newRecord.id);
             await put('attendance', data);
           }
         }
       } else {
-        // Offline: save locally and queue
-        setAttendance(prev => [...prev, newRecord]);
-        
+        // Offline: queue for sync
         if (dbReady) {
-          await put('attendance', newRecord);
           await addToSyncQueue({
             store: 'attendance',
             action: 'add',
@@ -650,6 +681,11 @@ export function useCloudCampaignData() {
             },
           });
         }
+
+        toast({
+          title: 'Offline এ সংরক্ষিত ✓',
+          description: 'Online হলে Cloud এ sync হবে',
+        });
       }
     }
   };
