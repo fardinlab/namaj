@@ -89,7 +89,7 @@ Analyze facial features carefully and respond with the matching member ID or NO_
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-pro", // Using Pro for better accuracy
+        model: "google/gemini-2.5-flash",
         messages: [
           {
             role: "system",
