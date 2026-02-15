@@ -44,9 +44,9 @@ export function CloudMemberPhotoUpload({
       const url = await compressAndUpload(file, memberId);
       onPhotoChange(url);
       toast.success('ছবি আপলোড হয়েছে');
-    } catch (error) {
-      console.error('Error uploading photo:', error);
-      toast.error('ছবি আপলোড করতে সমস্যা হয়েছে');
+    } catch (error: any) {
+      console.error('Photo upload error details:', error);
+      toast.error(`ছবি আপলোড সমস্যা: ${error?.message || 'অজানা ত্রুটি'}`);
     } finally {
       setLocalUploading(false);
       if (fileInputRef.current) {

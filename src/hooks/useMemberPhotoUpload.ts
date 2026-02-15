@@ -43,57 +43,84 @@ export function useMemberPhotoUpload() {
     return new Promise((resolve, reject) => {
       const img = new Image();
       const objectUrl = URL.createObjectURL(file);
+
+      // Set a timeout for mobile devices where large images may hang
+      const timeout = setTimeout(() => {
+        URL.revokeObjectURL(objectUrl);
+        reject(new Error('Image loading timed out'));
+      }, 15000);
       
       img.onload = () => {
+        clearTimeout(timeout);
         URL.revokeObjectURL(objectUrl);
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return reject(new Error('Canvas not supported'));
+        
+        try {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          if (!ctx) return reject(new Error('Canvas not supported'));
 
-        const attemptCompress = (currentMaxDim: number, currentQuality: number) => {
-          let width = img.width;
-          let height = img.height;
-
-          if (width > currentMaxDim || height > currentMaxDim) {
-            if (width > height) {
-              height = Math.round((height / width) * currentMaxDim);
-              width = currentMaxDim;
-            } else {
-              width = Math.round((width / height) * currentMaxDim);
-              height = currentMaxDim;
-            }
+          // For very large images (mobile camera), start with smaller dimensions
+          let startMaxDim = INITIAL_MAX_DIMENSION;
+          const megapixels = (img.width * img.height) / 1000000;
+          if (megapixels > 4) {
+            startMaxDim = 300; // More aggressive for large camera photos
+          }
+          if (megapixels > 8) {
+            startMaxDim = 250;
           }
 
-          canvas.width = width;
-          canvas.height = height;
-          ctx.clearRect(0, 0, width, height);
-          ctx.drawImage(img, 0, 0, width, height);
+          const attemptCompress = (currentMaxDim: number, currentQuality: number) => {
+            try {
+              let width = img.width;
+              let height = img.height;
 
-          canvas.toBlob(
-            (blob) => {
-              if (!blob) return reject(new Error('Failed to compress image'));
-              
-              console.log(`Compress attempt: dim=${currentMaxDim}, quality=${currentQuality.toFixed(1)}, size=${(blob.size / 1024).toFixed(1)}KB`);
-              
-              if (blob.size <= MAX_SIZE_BYTES) {
-                resolve(blob);
-              } else if (currentQuality > 0.2) {
-                attemptCompress(currentMaxDim, currentQuality - 0.1);
-              } else if (currentMaxDim > 100) {
-                attemptCompress(Math.round(currentMaxDim * 0.7), 0.7);
-              } else {
-                resolve(blob);
+              if (width > currentMaxDim || height > currentMaxDim) {
+                if (width > height) {
+                  height = Math.round((height / width) * currentMaxDim);
+                  width = currentMaxDim;
+                } else {
+                  width = Math.round((width / height) * currentMaxDim);
+                  height = currentMaxDim;
+                }
               }
-            },
-            'image/jpeg',
-            currentQuality
-          );
-        };
 
-        attemptCompress(INITIAL_MAX_DIMENSION, 0.8);
+              canvas.width = width;
+              canvas.height = height;
+              ctx.clearRect(0, 0, width, height);
+              ctx.drawImage(img, 0, 0, width, height);
+
+              canvas.toBlob(
+                (blob) => {
+                  if (!blob) return reject(new Error('Failed to compress image'));
+                  
+                  console.log(`Compress: dim=${currentMaxDim}, q=${currentQuality.toFixed(1)}, size=${(blob.size / 1024).toFixed(1)}KB`);
+                  
+                  if (blob.size <= MAX_SIZE_BYTES) {
+                    resolve(blob);
+                  } else if (currentQuality > 0.2) {
+                    attemptCompress(currentMaxDim, currentQuality - 0.15);
+                  } else if (currentMaxDim > 80) {
+                    attemptCompress(Math.round(currentMaxDim * 0.6), 0.6);
+                  } else {
+                    resolve(blob); // Accept best effort
+                  }
+                },
+                'image/jpeg',
+                currentQuality
+              );
+            } catch (e) {
+              reject(new Error('Canvas drawing failed: ' + (e as Error).message));
+            }
+          };
+
+          attemptCompress(startMaxDim, 0.8);
+        } catch (e) {
+          reject(new Error('Compression setup failed: ' + (e as Error).message));
+        }
       };
 
       img.onerror = () => {
+        clearTimeout(timeout);
         URL.revokeObjectURL(objectUrl);
         reject(new Error('Failed to load image'));
       };
