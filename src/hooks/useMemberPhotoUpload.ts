@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
-const MAX_DIMENSION = 400;
+const MAX_SIZE_BYTES = 100 * 1024; // 100KB target
+const INITIAL_MAX_DIMENSION = 400;
 
 export function useMemberPhotoUpload() {
   const [isUploading, setIsUploading] = useState(false);
@@ -10,7 +11,7 @@ export function useMemberPhotoUpload() {
     setIsUploading(true);
     
     try {
-      // Compress image
+      // Compress image to under 100KB
       const compressedBlob = await compressImage(file);
       
       // Generate unique filename
@@ -41,39 +42,77 @@ export function useMemberPhotoUpload() {
   const compressImage = (file: File): Promise<Blob> => {
     return new Promise((resolve, reject) => {
       const img = new Image();
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-
+      
       img.onload = () => {
-        let width = img.width;
-        let height = img.height;
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return reject(new Error('Canvas not supported'));
 
-        // Scale down if needed
-        if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
-          if (width > height) {
-            height = (height / width) * MAX_DIMENSION;
-            width = MAX_DIMENSION;
-          } else {
-            width = (width / height) * MAX_DIMENSION;
-            height = MAX_DIMENSION;
-          }
-        }
+        let maxDim = INITIAL_MAX_DIMENSION;
+        let quality = 0.8;
+        
+        const tryCompress = (): Blob | null => {
+          let width = img.width;
+          let height = img.height;
 
-        canvas.width = width;
-        canvas.height = height;
-        ctx?.drawImage(img, 0, 0, width, height);
-
-        canvas.toBlob(
-          (blob) => {
-            if (blob) {
-              resolve(blob);
+          // Scale down to maxDim
+          if (width > maxDim || height > maxDim) {
+            if (width > height) {
+              height = (height / width) * maxDim;
+              width = maxDim;
             } else {
-              reject(new Error('Failed to compress image'));
+              width = (width / height) * maxDim;
+              height = maxDim;
             }
-          },
-          'image/jpeg',
-          0.8
-        );
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          ctx.drawImage(img, 0, 0, width, height);
+          return null; // we'll use toBlob async
+        };
+
+        const attemptCompress = (currentMaxDim: number, currentQuality: number) => {
+          let width = img.width;
+          let height = img.height;
+
+          if (width > currentMaxDim || height > currentMaxDim) {
+            if (width > height) {
+              height = (height / width) * currentMaxDim;
+              width = currentMaxDim;
+            } else {
+              width = (width / height) * currentMaxDim;
+              height = currentMaxDim;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          ctx.drawImage(img, 0, 0, width, height);
+
+          canvas.toBlob(
+            (blob) => {
+              if (!blob) return reject(new Error('Failed to compress image'));
+              
+              if (blob.size <= MAX_SIZE_BYTES) {
+                resolve(blob);
+              } else if (currentQuality > 0.2) {
+                // Reduce quality first
+                attemptCompress(currentMaxDim, currentQuality - 0.1);
+              } else if (currentMaxDim > 100) {
+                // Then reduce dimensions
+                attemptCompress(Math.round(currentMaxDim * 0.7), 0.7);
+              } else {
+                // Accept whatever we got at minimum settings
+                resolve(blob);
+              }
+            },
+            'image/jpeg',
+            currentQuality
+          );
+        };
+
+        attemptCompress(INITIAL_MAX_DIMENSION, quality);
       };
 
       img.onerror = () => reject(new Error('Failed to load image'));
