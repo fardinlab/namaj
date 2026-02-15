@@ -144,6 +144,7 @@ export function MemberPhotoUpload({ photo, name, onPhotoChange, size = 'md' }: M
         ref={fileInputRef}
         type="file"
         accept="image/*"
+        capture="environment"
         onChange={handleFileSelect}
         className="hidden"
       />
