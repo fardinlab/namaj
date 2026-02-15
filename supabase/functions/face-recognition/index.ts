@@ -37,48 +37,47 @@ serve(async (req) => {
       `Photo ${i + 2}: Member ID="${m.id}", Name="${m.name}"`
     ).join("\n");
 
-    const systemPrompt = `You are an expert face recognition system. Compare the FIRST image (captured from camera) with the subsequent member photos.
+    const systemPrompt = `You are a precise face recognition system. You will receive a camera photo (Photo 1) and several member photos. Your job is to find which member (if any) matches the person in Photo 1.
 
-MATCHING CRITERIA - Focus on these permanent facial features:
-1. Face shape and bone structure
-2. Eye shape, size, spacing, and position
-3. Nose bridge width, tip shape, and nostril size
-4. Mouth width and lip proportions
-5. Eyebrow arch and thickness
-6. Jawline contour and chin shape
-7. Cheekbone prominence
-8. Ear shape and position (if visible)
+STRICT MATCHING RULES:
+- You MUST be 95%+ confident to report a MATCH
+- Compare ONLY the face in Photo 1 against each member photo ONE BY ONE
+- Focus on: face shape, eye shape/spacing, nose structure, mouth shape, jawline, eyebrow shape
+- IGNORE: lighting, angle, expression, clothing, background, hair style, glasses
+- If TWO or more members look similar to the camera photo, respond NO_MATCH
+- If the camera photo face is blurry or partially hidden, respond NO_MATCH
+- NEVER guess - when in doubt, respond NO_MATCH
+- FALSE MATCH is worse than NO_MATCH
 
-IMPORTANT GUIDELINES:
-- Match if you are 80%+ confident based on facial structure
-- IGNORE differences in: lighting, angle, expression, glasses, facial hair length, clothing
-- Focus on BONE STRUCTURE which doesn't change
-- The camera photo may be from a different angle or lighting - this is normal
-- Member photos may be small/compressed - focus on what you can see
-- If you can identify the same person despite quality differences, report MATCH
-
-RESPONSE FORMAT (no explanation, just this):
-- If match found: MATCH:member_id_here
-- If no match: NO_MATCH`;
+RESPONSE FORMAT (exactly one line, no explanation):
+MATCH:member_id_here
+or
+NO_MATCH`;
 
     const userContent = [
       {
         type: "text",
-        text: `Photo 1 (Camera capture - the person to identify):
-Compare this person's face with the following member photos:
+        text: `CAMERA PHOTO (Photo 1) - Identify this person:
+The following are member photos to compare against. Each photo is labeled with its member ID.
 
 ${memberList}
 
-Analyze facial features carefully and respond with the matching member ID or NO_MATCH.`
+Compare the face in Photo 1 carefully against EACH member photo. Only report MATCH if you are absolutely certain it is the same person.`
       },
       {
         type: "image_url",
         image_url: { url: capturedImage }
       },
-      ...memberPhotos.map((m: { photo: string }) => ({
-        type: "image_url",
-        image_url: { url: m.photo }
-      }))
+      ...memberPhotos.map((m: { photo: string; id: string; name: string }, i: number) => ([
+        {
+          type: "text",
+          text: `--- Member: ${m.name} (ID: ${m.id}) ---`
+        },
+        {
+          type: "image_url",
+          image_url: { url: m.photo }
+        }
+      ])).flat()
     ];
 
     // Use the more powerful model for better accuracy
