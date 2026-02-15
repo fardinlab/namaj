@@ -42,35 +42,13 @@ export function useMemberPhotoUpload() {
   const compressImage = (file: File): Promise<Blob> => {
     return new Promise((resolve, reject) => {
       const img = new Image();
+      const objectUrl = URL.createObjectURL(file);
       
       img.onload = () => {
+        URL.revokeObjectURL(objectUrl);
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
         if (!ctx) return reject(new Error('Canvas not supported'));
-
-        let maxDim = INITIAL_MAX_DIMENSION;
-        let quality = 0.8;
-        
-        const tryCompress = (): Blob | null => {
-          let width = img.width;
-          let height = img.height;
-
-          // Scale down to maxDim
-          if (width > maxDim || height > maxDim) {
-            if (width > height) {
-              height = (height / width) * maxDim;
-              width = maxDim;
-            } else {
-              width = (width / height) * maxDim;
-              height = maxDim;
-            }
-          }
-
-          canvas.width = width;
-          canvas.height = height;
-          ctx.drawImage(img, 0, 0, width, height);
-          return null; // we'll use toBlob async
-        };
 
         const attemptCompress = (currentMaxDim: number, currentQuality: number) => {
           let width = img.width;
@@ -78,32 +56,32 @@ export function useMemberPhotoUpload() {
 
           if (width > currentMaxDim || height > currentMaxDim) {
             if (width > height) {
-              height = (height / width) * currentMaxDim;
+              height = Math.round((height / width) * currentMaxDim);
               width = currentMaxDim;
             } else {
-              width = (width / height) * currentMaxDim;
+              width = Math.round((width / height) * currentMaxDim);
               height = currentMaxDim;
             }
           }
 
           canvas.width = width;
           canvas.height = height;
+          ctx.clearRect(0, 0, width, height);
           ctx.drawImage(img, 0, 0, width, height);
 
           canvas.toBlob(
             (blob) => {
               if (!blob) return reject(new Error('Failed to compress image'));
               
+              console.log(`Compress attempt: dim=${currentMaxDim}, quality=${currentQuality.toFixed(1)}, size=${(blob.size / 1024).toFixed(1)}KB`);
+              
               if (blob.size <= MAX_SIZE_BYTES) {
                 resolve(blob);
               } else if (currentQuality > 0.2) {
-                // Reduce quality first
                 attemptCompress(currentMaxDim, currentQuality - 0.1);
               } else if (currentMaxDim > 100) {
-                // Then reduce dimensions
                 attemptCompress(Math.round(currentMaxDim * 0.7), 0.7);
               } else {
-                // Accept whatever we got at minimum settings
                 resolve(blob);
               }
             },
@@ -112,11 +90,14 @@ export function useMemberPhotoUpload() {
           );
         };
 
-        attemptCompress(INITIAL_MAX_DIMENSION, quality);
+        attemptCompress(INITIAL_MAX_DIMENSION, 0.8);
       };
 
-      img.onerror = () => reject(new Error('Failed to load image'));
-      img.src = URL.createObjectURL(file);
+      img.onerror = () => {
+        URL.revokeObjectURL(objectUrl);
+        reject(new Error('Failed to load image'));
+      };
+      img.src = objectUrl;
     });
   };
 
