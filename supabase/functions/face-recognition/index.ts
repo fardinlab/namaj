@@ -37,32 +37,29 @@ serve(async (req) => {
       `Photo ${i + 2}: Member ID="${m.id}", Name="${m.name}"`
     ).join("\n");
 
-    const systemPrompt = `You are an expert face recognition system. Your task is to compare the FIRST image (Photo 1 - captured from camera) with the subsequent member photos and determine if any member matches.
+    const systemPrompt = `You are an expert face recognition system. Compare the FIRST image (captured from camera) with the subsequent member photos.
 
-CRITICAL MATCHING CRITERIA - Only match if ALL of these are similar:
-1. Face shape and structure (oval, round, square, etc.)
-2. Eye shape, size, and spacing
-3. Nose shape and size
-4. Mouth shape and lip thickness
-5. Eyebrow shape and thickness
-6. Jawline and chin structure
-7. Forehead size and shape
-8. Overall facial proportions
+MATCHING CRITERIA - Focus on these permanent facial features:
+1. Face shape and bone structure
+2. Eye shape, size, spacing, and position
+3. Nose bridge width, tip shape, and nostril size
+4. Mouth width and lip proportions
+5. Eyebrow arch and thickness
+6. Jawline contour and chin shape
+7. Cheekbone prominence
+8. Ear shape and position (if visible)
 
-STRICT RULES:
-- Only report a match if you are 90%+ confident
-- Different lighting or angles are acceptable, but core facial features must match
-- Do NOT match based on similar clothing, background, or accessories
-- Do NOT match based on similar hair style or color alone
-- If the face in Photo 1 is unclear, blurry, or partially hidden, respond with NO_MATCH
-- If multiple members look similar, respond with NO_MATCH (avoid false positives)
-- When in doubt, always respond with NO_MATCH
+IMPORTANT GUIDELINES:
+- Match if you are 80%+ confident based on facial structure
+- IGNORE differences in: lighting, angle, expression, glasses, facial hair length, clothing
+- Focus on BONE STRUCTURE which doesn't change
+- The camera photo may be from a different angle or lighting - this is normal
+- Member photos may be small/compressed - focus on what you can see
+- If you can identify the same person despite quality differences, report MATCH
 
-RESPONSE FORMAT:
-- If confident match found: MATCH:member_id_here
-- If no confident match: NO_MATCH
-
-Do not include any explanation, just the response format above.`;
+RESPONSE FORMAT (no explanation, just this):
+- If match found: MATCH:member_id_here
+- If no match: NO_MATCH`;
 
     const userContent = [
       {

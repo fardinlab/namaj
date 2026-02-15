@@ -95,23 +95,66 @@ export function MemberSearch({ members, onSelectMember, selectedMemberId }: Memb
     setIsScanning(true);
 
     try {
-      // Capture image from video
+      // Capture image from video - resize to max 512px for better processing
       const canvas = canvasRef.current;
       const video = videoRef.current;
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
+      
+      const maxDim = 512;
+      let width = video.videoWidth;
+      let height = video.videoHeight;
+      if (width > maxDim || height > maxDim) {
+        if (width > height) {
+          height = Math.round((height / width) * maxDim);
+          width = maxDim;
+        } else {
+          width = Math.round((width / height) * maxDim);
+          height = maxDim;
+        }
+      }
+      
+      canvas.width = width;
+      canvas.height = height;
       const ctx = canvas.getContext('2d');
       if (!ctx) throw new Error('Canvas context not available');
       
-      ctx.drawImage(video, 0, 0);
-      const capturedImage = canvas.toDataURL('image/jpeg', 0.8);
+      ctx.drawImage(video, 0, 0, width, height);
+      const capturedImage = canvas.toDataURL('image/jpeg', 0.85);
 
-      // Prepare member photos for comparison
-      const memberPhotos = membersWithPhotos.map(m => ({
-        id: m.id,
-        name: m.name,
-        photo: m.photo!
-      }));
+      // Convert member photo URLs to base64 for reliable AI processing
+      const memberPhotos = await Promise.all(
+        membersWithPhotos.map(async (m) => {
+          let photoData = m.photo!;
+          
+          // If it's a URL (not base64), convert to base64
+          if (photoData.startsWith('http')) {
+            try {
+              const response = await fetch(photoData);
+              const blob = await response.blob();
+              photoData = await new Promise<string>((resolve) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result as string);
+                reader.readAsDataURL(blob);
+              });
+            } catch (e) {
+              console.warn(`Failed to fetch photo for ${m.name}:`, e);
+              return null;
+            }
+          }
+          
+          return {
+            id: m.id,
+            name: m.name,
+            photo: photoData
+          };
+        })
+      );
+
+      const validMemberPhotos = memberPhotos.filter(Boolean);
+
+      if (validMemberPhotos.length === 0) {
+        toast.error('সদস্যদের ছবি লোড করা যায়নি');
+        return;
+      }
 
       // Call face recognition API
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/face-recognition`, {
@@ -122,7 +165,7 @@ export function MemberSearch({ members, onSelectMember, selectedMemberId }: Memb
         },
         body: JSON.stringify({
           capturedImage,
-          memberPhotos
+          memberPhotos: validMemberPhotos
         })
       });
 
