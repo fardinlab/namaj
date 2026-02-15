@@ -72,8 +72,8 @@ export function CloudMemberPhotoUpload({
       />
       
       <div 
-        className={`relative ${!photoUrl ? 'cursor-pointer group' : ''} ${isLoading ? 'pointer-events-none' : ''}`}
-        onClick={() => !photoUrl && fileInputRef.current?.click()}
+        className={`relative cursor-pointer group ${isLoading ? 'pointer-events-none' : ''}`}
+        onClick={() => fileInputRef.current?.click()}
       >
         <Avatar className={`${sizeClasses[size]} border-2 border-border`}>
           <AvatarImage src={photoUrl || undefined} alt={name} />
@@ -82,16 +82,14 @@ export function CloudMemberPhotoUpload({
           </AvatarFallback>
         </Avatar>
         
-        {/* Upload overlay - only show when no photo */}
-        {!photoUrl && (
-          <div className={`absolute inset-0 rounded-full bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity ${sizeClasses[size]}`}>
-            {isLoading ? (
-              <Loader2 className="h-4 w-4 text-white animate-spin" />
-            ) : (
-              <Camera className="h-4 w-4 text-white" />
-            )}
-          </div>
-        )}
+        {/* Upload/Change overlay */}
+        <div className={`absolute inset-0 rounded-full bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity ${sizeClasses[size]}`}>
+          {isLoading ? (
+            <Loader2 className="h-4 w-4 text-white animate-spin" />
+          ) : (
+            <Camera className="h-4 w-4 text-white" />
+          )}
+        </div>
 
         {/* Loading state overlay */}
         {isLoading && (
