@@ -104,7 +104,8 @@ export function useCloudCampaignData() {
     }
   };
 
-  // Save to IndexedDB cache
+  // Save to IndexedDB cache - uses putMany (upsert) to avoid race conditions
+  // Previously used clear+putMany which could lose data if a refresh happened between clear and put
   const saveToCache = async (
     newMembers?: CloudMember[],
     newAttendance?: CloudAttendance[],
@@ -114,12 +115,25 @@ export function useCloudCampaignData() {
 
     try {
       if (newMembers) {
-        await clear('members');
+        // Use putMany to upsert all members, then remove any that no longer exist
         await putMany('members', newMembers);
+        const cachedMembers = await getAll<CloudMember>('members');
+        const newMemberIds = new Set(newMembers.map(m => m.id));
+        for (const cached of cachedMembers) {
+          if (!newMemberIds.has(cached.id)) {
+            await remove('members', cached.id);
+          }
+        }
       }
       if (newAttendance) {
-        await clear('attendance');
         await putMany('attendance', newAttendance);
+        const cachedAttendance = await getAll<CloudAttendance>('attendance');
+        const newAttIds = new Set(newAttendance.map(a => a.id));
+        for (const cached of cachedAttendance) {
+          if (!newAttIds.has(cached.id)) {
+            await remove('attendance', cached.id);
+          }
+        }
       }
       if (newConfig) {
         await clear('config');
@@ -401,37 +415,58 @@ export function useCloudCampaignData() {
   };
 
   const updateMemberPhoto = async (memberId: string, photoUrl: string | null) => {
-    // Update local state first (optimistic update)
-    let updatedMember: CloudMember | undefined;
+    // Build the updated member from current state synchronously
+    const currentMember = members.find(m => m.id === memberId);
+    if (!currentMember) {
+      console.error('Member not found for photo update:', memberId);
+      return;
+    }
     
-    setMembers(prev => {
-      const updated = prev.map(m => {
-        if (m.id === memberId) {
-          updatedMember = { ...m, photo_url: photoUrl };
-          return updatedMember;
-        }
-        return m;
-      });
-      return updated;
-    });
+    const updatedMember: CloudMember = { ...currentMember, photo_url: photoUrl };
 
-    // Update IndexedDB cache immediately with the updated member
-    if (dbReady && updatedMember) {
+    // Update local state (optimistic update)
+    setMembers(prev => prev.map(m => m.id === memberId ? updatedMember : m));
+
+    // Update IndexedDB cache immediately
+    if (dbReady) {
       await put('members', updatedMember);
       console.log('Photo URL saved to IndexedDB:', updatedMember.photo_url);
     }
 
     if (isOnline) {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('members')
         .update({ photo_url: photoUrl })
-        .eq('id', memberId);
+        .eq('id', memberId)
+        .select()
+        .single();
 
       if (error) {
         console.error('Error updating photo in cloud:', error);
+        // Rollback local state
+        setMembers(prev => prev.map(m => m.id === memberId ? currentMember : m));
+        if (dbReady) {
+          await put('members', currentMember);
+        }
         throw error;
       }
-      console.log('Photo URL saved to Cloud:', photoUrl);
+      
+      // Update with confirmed cloud data
+      if (data) {
+        const confirmedMember: CloudMember = {
+          id: data.id,
+          name: data.name,
+          phone: data.phone,
+          photo_url: data.photo_url,
+          created_at: data.created_at,
+          created_by: data.created_by,
+        };
+        setMembers(prev => prev.map(m => m.id === memberId ? confirmedMember : m));
+        if (dbReady) {
+          await put('members', confirmedMember);
+        }
+      }
+      console.log('Photo URL confirmed in Cloud:', data?.photo_url);
     } else {
       // Queue for sync when offline
       if (dbReady) {
